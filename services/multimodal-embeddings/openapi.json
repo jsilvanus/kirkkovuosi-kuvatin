@@ -1,0 +1,349 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Kirkkovuosi-Kuvatin Multimodal Embedding Service",
+    "version": "0.1.0",
+    "description": "Asynchronous image and text embeddings from an aligned multilingual CLIP model pair. Image and text vectors use a shared vector space."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8091"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Check API liveness",
+        "responses": {
+          "200": {
+            "description": "API is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "operationId": "getModels",
+        "summary": "Describe the configured encoder pair",
+        "responses": {
+          "200": {
+            "description": "Model and embedding contract",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/text": {
+      "post": {
+        "operationId": "createTextJob",
+        "summary": "Queue text for embedding",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TextJobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Job accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
+    "/v1/jobs/image": {
+      "post": {
+        "operationId": "createImageJob",
+        "summary": "Queue image for embedding",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageJobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Job accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid image or request"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{job_id}": {
+      "get": {
+        "operationId": "getJob",
+        "summary": "Get job status and completed embedding",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No job with this ID"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "model",
+          "device"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          },
+          "model": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          }
+        }
+      },
+      "ModelsResponse": {
+        "type": "object",
+        "required": [
+          "model",
+          "image_model",
+          "text_model",
+          "modalities",
+          "shared_vector_space",
+          "normalization"
+        ],
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "image_model": {
+            "type": "string"
+          },
+          "text_model": {
+            "type": "string"
+          },
+          "modalities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "text",
+                "image"
+              ]
+            }
+          },
+          "shared_vector_space": {
+            "type": "boolean",
+            "const": true
+          },
+          "normalization": {
+            "type": "string",
+            "const": "L2"
+          }
+        }
+      },
+      "TextJobRequest": {
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          }
+        }
+      },
+      "ImageJobRequest": {
+        "type": "object",
+        "required": [
+          "image_base64"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "image_base64": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Raw base64-encoded image bytes, without a data URL prefix."
+          },
+          "filename": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255
+          }
+        }
+      },
+      "JobAccepted": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "modality",
+          "model_name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "const": "queued"
+          },
+          "modality": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image"
+            ]
+          },
+          "model_name": {
+            "type": "string"
+          }
+        }
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "complete",
+          "failed"
+        ]
+      },
+      "JobResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "modality",
+          "filename",
+          "status",
+          "model_name",
+          "dimensions",
+          "error",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "modality": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image"
+            ]
+          },
+          "filename": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "model_name": {
+            "type": "string"
+          },
+          "dimensions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "embedding": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Present only when status is complete."
+          }
+        }
+      }
+    }
+  }
+}

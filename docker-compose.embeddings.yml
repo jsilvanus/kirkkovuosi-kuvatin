@@ -1,0 +1,36 @@
+services:
+  embedding-api:
+    build:
+      context: ./services/multimodal-embeddings
+    environment:
+      EMBEDDING_DATA_DIR: /data
+      HF_HOME: /models
+      EMBEDDING_IMAGE_MODEL: ${EMBEDDING_IMAGE_MODEL:-sentence-transformers/clip-ViT-B-32}
+      EMBEDDING_TEXT_MODEL: ${EMBEDDING_TEXT_MODEL:-sentence-transformers/clip-ViT-B-32-multilingual-v1}
+      EMBEDDING_DEVICE: ${EMBEDDING_DEVICE:-cpu}
+    ports:
+      - "127.0.0.1:8091:8091"
+    volumes:
+      - embedding-data:/data
+      - embedding-models:/models
+    restart: unless-stopped
+
+  embedding-worker:
+    build:
+      context: ./services/multimodal-embeddings
+    command: ["python", "-m", "multimodal_embeddings.worker"]
+    environment:
+      EMBEDDING_DATA_DIR: /data
+      HF_HOME: /models
+      EMBEDDING_IMAGE_MODEL: ${EMBEDDING_IMAGE_MODEL:-sentence-transformers/clip-ViT-B-32}
+      EMBEDDING_TEXT_MODEL: ${EMBEDDING_TEXT_MODEL:-sentence-transformers/clip-ViT-B-32-multilingual-v1}
+      EMBEDDING_DEVICE: ${EMBEDDING_DEVICE:-cpu}
+      EMBEDDING_WORKER_POLL_SECONDS: "0.5"
+    volumes:
+      - embedding-data:/data
+      - embedding-models:/models
+    restart: unless-stopped
+
+volumes:
+  embedding-data:
+  embedding-models:
