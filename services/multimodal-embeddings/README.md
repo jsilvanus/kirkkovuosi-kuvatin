@@ -10,7 +10,9 @@ Defaults:
 
 This is intentionally a paired setup, not one checkpoint pretending to encode both modalities. The multilingual model card says its text encoder was distilled to match the original CLIP image encoder, and lists Finnish among its supported languages. Both encoders should produce 512-dimensional vectors. The service normalizes vectors to unit length.
 
-Configure with `EMBEDDING_IMAGE_MODEL` and `EMBEDDING_TEXT_MODEL`. The service advertises the shared-vector-space contract for the documented default pair. If either model is changed, `/v1/models` returns `shared_vector_space: false` unless `EMBEDDING_SHARED_VECTOR_SPACE=true` is explicitly set. That override is an operator assertion, not an automatic compatibility check: use it only after confirming the models were trained/aligned for the same vector space. Model revisions are not pinned yet; before production indexing, pin immutable Hugging Face revisions and include them in the index/model identity. Changing either model/revision requires re-embedding.
+The default pair is pinned to immutable Hugging Face revisions: image revision `327ab67` for `sentence-transformers/clip-ViT-B-32`, and text revision `58edf8cada9e398793dca955574a48cbb7f18be2` for `sentence-transformers/clip-ViT-B-32-multilingual-v1`. The text model card documents Finnish among its supported languages and says the text encoder was distilled to align with the original CLIP image encoder. Both encoders should produce 512-dimensional vectors, normalized to unit length.
+
+Configure with `EMBEDDING_IMAGE_MODEL`, `EMBEDDING_IMAGE_REVISION`, `EMBEDDING_TEXT_MODEL`, and `EMBEDDING_TEXT_REVISION`. `/v1/models` returns model IDs and revisions separately. The complete model identity and database pair digest include revisions, so changing a revision creates a distinct embedding identity and requires re-embedding. If either model or revision is changed, `shared_vector_space` becomes false unless `EMBEDDING_SHARED_VECTOR_SPACE=true` is explicitly set. That override is an operator assertion, not an automatic compatibility check: use it only after confirming the models were trained/aligned for the same vector space. The image revision is the abbreviated immutable commit displayed by the model's Hugging Face commit history; the text revision is a full commit SHA.
 
 ## Run locally
 
@@ -68,4 +70,4 @@ pip install -e '.[dev]'
 pytest
 ```
 
-Queue tests do not download model weights. Model loading/inference needs a separate smoke test in an environment with the model cached and compatible PyTorch dependencies.
+The ordinary test suite does not download model weights. An opt-in smoke test checks actual text and image inference and their 512-dimensional normalized vectors. Run it with `RUN_MODEL_INFERENCE_TESTS=1 pytest -q tests/test_model_inference.py` in an environment with enough disk space for the pinned model snapshots. The first run downloads weights from Hugging Face.
