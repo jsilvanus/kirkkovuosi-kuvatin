@@ -39,6 +39,10 @@ docker compose -f docker-compose.embeddings.yml up --build -d
 
 The first worker start downloads model weights from Hugging Face. Set `EMBEDDING_DEVICE=cuda` for a supported NVIDIA/PyTorch CUDA environment, or `cpu` to force CPU. `auto` (default in the Python module) uses CUDA when available; Compose defaults to CPU unless configured otherwise. The API is bound to localhost by default. This initial setup has no authentication.
 
+## OpenAPI contract and generated clients
+
+The canonical contract is `openapi.json`, served at `/openapi.json`. The main TypeScript application generates types from this file with `npm run embedding:types`; do not hand-edit generated types. Update the contract and the API implementation together when endpoints or response schemas change.
+
 ## API
 
 - `GET /health` — liveness and configured model pair (does not guarantee the models have loaded).
