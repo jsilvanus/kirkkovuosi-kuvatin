@@ -22,7 +22,8 @@ async function main() {
     case 'upload':
       out(await uploadAssets()); break;
     case 'embed':
-      out(await embedAssets(args.filter((arg) => !arg.startsWith('--')));
+      const textModels = args.filter((arg) => !arg.startsWith('--'));
+      out(await embedAssets(textModels.length ? textModels : undefined));
       break;
     case 'search': {
       const query = args[0];
