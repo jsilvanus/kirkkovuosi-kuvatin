@@ -13,9 +13,11 @@ from .model import (
     DEFAULT_IMAGE_MODEL,
     DEFAULT_TEXT_MODEL,
     configured_image_model,
+    configured_image_revision,
     configured_model_name,
     configured_shared_vector_space,
     configured_text_model,
+    configured_text_revision,
 )
 
 
@@ -71,7 +73,9 @@ def models() -> dict[str, object]:
     return {
         "model": configured_model_name(),
         "image_model": configured_image_model(),
+        "image_revision": configured_image_revision(),
         "text_model": configured_text_model(),
+        "text_revision": configured_text_revision(),
         "modalities": ["text", "image"],
         "shared_vector_space": configured_shared_vector_space(),
         "normalization": "L2",

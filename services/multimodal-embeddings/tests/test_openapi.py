@@ -14,3 +14,7 @@ def test_openapi_endpoint_matches_checked_in_contract():
     }
     assert schema['paths']['/v1/jobs/text']['post']['operationId'] == 'createTextJob'
     assert schema['components']['schemas']['JobStatus']['enum'] == ['queued', 'running', 'complete', 'failed']
+    model_schema = schema['components']['schemas']['ModelsResponse']
+    assert {'image_revision', 'text_revision'} <= set(model_schema['required'])
+    assert model_schema['properties']['image_revision']['type'] == 'string'
+    assert model_schema['properties']['text_revision']['type'] == 'string'

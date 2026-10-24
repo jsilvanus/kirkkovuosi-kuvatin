@@ -3,7 +3,7 @@
   "info": {
     "title": "Kirkkovuosi-Kuvatin Multimodal Embedding Service",
     "version": "0.1.0",
-    "description": "Asynchronous image and text embeddings. The default multilingual CLIP pair shares a vector space; custom pairs must be explicitly declared compatible."
+    "description": "Asynchronous image and text embeddings. The default multilingual CLIP pair is pinned to immutable Hub revisions and shares a vector space; custom pairs must be explicitly declared compatible."
   },
   "servers": [
     {
@@ -169,7 +169,9 @@
         "required": [
           "model",
           "image_model",
+          "image_revision",
           "text_model",
+          "text_revision",
           "modalities",
           "shared_vector_space",
           "normalization"
@@ -196,11 +198,19 @@
           },
           "shared_vector_space": {
             "type": "boolean",
-            "description": "True for the documented default pair, or for a custom pair only when the operator explicitly asserts compatibility."
+            "description": "True for the documented default model pair and pinned revisions, or for a custom pair only when the operator explicitly asserts compatibility."
           },
           "normalization": {
             "type": "string",
             "const": "L2"
+          },
+          "image_revision": {
+            "type": "string",
+            "description": "Immutable Hugging Face revision used by the image encoder."
+          },
+          "text_revision": {
+            "type": "string",
+            "description": "Immutable Hugging Face revision used by the text encoder."
           }
         }
       },

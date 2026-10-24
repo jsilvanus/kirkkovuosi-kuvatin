@@ -8,29 +8,45 @@ import numpy as np
 from PIL import Image
 from sentence_transformers import SentenceTransformer
 
-# These are a documented, aligned pair: the multilingual text encoder was
-# distilled to match the image vectors produced by the original CLIP encoder.
+# Immutable Hub revisions for a documented, aligned multilingual CLIP pair.
 DEFAULT_IMAGE_MODEL = "sentence-transformers/clip-ViT-B-32"
 DEFAULT_TEXT_MODEL = "sentence-transformers/clip-ViT-B-32-multilingual-v1"
+DEFAULT_IMAGE_REVISION = "327ab67"
+DEFAULT_TEXT_REVISION = "58edf8cada9e398793dca955574a48cbb7f18be2"
 
 
 def configured_image_model() -> str:
-    return os.getenv("EMBEDDING_IMAGE_MODEL", DEFAULT_IMAGE_MODEL)
+    return os.getenv("EMBEDDING_IMAGE_MODEL", DEFAULT_IMAGE_MODEL).strip()
 
 
 def configured_text_model() -> str:
-    return os.getenv("EMBEDDING_TEXT_MODEL", DEFAULT_TEXT_MODEL)
+    return os.getenv("EMBEDDING_TEXT_MODEL", DEFAULT_TEXT_MODEL).strip()
+
+
+def configured_image_revision() -> str:
+    return os.getenv("EMBEDDING_IMAGE_REVISION", DEFAULT_IMAGE_REVISION).strip()
+
+
+def configured_text_revision() -> str:
+    return os.getenv("EMBEDDING_TEXT_REVISION", DEFAULT_TEXT_REVISION).strip()
 
 
 def configured_model_name() -> str:
-    return f"{configured_image_model()}+{configured_text_model()}"
+    return (
+        f"{configured_image_model()}@{configured_image_revision()}+"
+        f"{configured_text_model()}@{configured_text_revision()}"
+    )
 
 
 def configured_shared_vector_space() -> bool:
-    """Only advertise compatibility for the known pair or an explicit operator assertion."""
-    image_model = configured_image_model()
-    text_model = configured_text_model()
-    if image_model == DEFAULT_IMAGE_MODEL and text_model == DEFAULT_TEXT_MODEL:
+    """Only advertise compatibility for the known, pinned pair or an operator assertion."""
+    default_pair = (
+        configured_image_model() == DEFAULT_IMAGE_MODEL
+        and configured_text_model() == DEFAULT_TEXT_MODEL
+        and configured_image_revision() == DEFAULT_IMAGE_REVISION
+        and configured_text_revision() == DEFAULT_TEXT_REVISION
+    )
+    if default_pair:
         return True
     return os.getenv("EMBEDDING_SHARED_VECTOR_SPACE", "").strip().lower() in {"1", "true", "yes"}
 
@@ -48,8 +64,12 @@ def configured_device() -> str:
 @lru_cache(maxsize=1)
 def load_models() -> tuple[SentenceTransformer, SentenceTransformer]:
     device = configured_device()
-    image_model = SentenceTransformer(configured_image_model(), device=device)
-    text_model = SentenceTransformer(configured_text_model(), device=device)
+    image_model = SentenceTransformer(
+        configured_image_model(), revision=configured_image_revision(), device=device
+    )
+    text_model = SentenceTransformer(
+        configured_text_model(), revision=configured_text_revision(), device=device
+    )
     return image_model, text_model
 
 

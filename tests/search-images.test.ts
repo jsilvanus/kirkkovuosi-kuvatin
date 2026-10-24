@@ -17,29 +17,34 @@ test('semantic image search validates the result limit before contacting service
 test('semantic search excludes vectors whose checksum no longer matches the asset', async () => {
   const imageModel = 'sentence-transformers/clip-ViT-B-32';
   const textModel = 'sentence-transformers/clip-ViT-B-32-multilingual-v1';
-  const modelDigest = 'image=' + imageModel + ';text=' + textModel;
+  const imageRevision = '327ab67';
+  const textRevision = '58edf8cada9e398793dca955574a48cbb7f18be2';
+  const modelIdentity = imageModel + '@' + imageRevision + '+' + textModel + '@' + textRevision;
+  const modelDigest = 'image=' + imageModel + '@' + imageRevision + ';text=' + textModel + '@' + textRevision;
   const originalFetch = globalThis.fetch;
   const jobId = '00000000-0000-4000-8000-000000000001';
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.endsWith('/v1/models')) {
       return new Response(JSON.stringify({
-        model: imageModel + '+' + textModel,
+        model: modelIdentity,
         image_model: imageModel,
+        image_revision: imageRevision,
         text_model: textModel,
+        text_revision: textRevision,
         modalities: ['text', 'image'],
         shared_vector_space: true,
         normalization: 'L2',
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
     if (url.endsWith('/v1/jobs/text') && init?.method === 'POST') {
-      return new Response(JSON.stringify({ id: jobId, status: 'queued', modality: 'text', model_name: imageModel + '+' + textModel }), {
+      return new Response(JSON.stringify({ id: jobId, status: 'queued', modality: 'text', model_name: modelIdentity }), {
         status: 202, headers: { 'content-type': 'application/json' },
       });
     }
     if (url.endsWith('/v1/jobs/' + jobId)) {
       return new Response(JSON.stringify({
-        id: jobId, modality: 'text', filename: null, status: 'complete', model_name: imageModel + '+' + textModel,
+        id: jobId, modality: 'text', filename: null, status: 'complete', model_name: modelIdentity,
         dimensions: 2, error: null, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
         embedding: [1, 0],
       }), { status: 200, headers: { 'content-type': 'application/json' } });

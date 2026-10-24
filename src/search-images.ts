@@ -34,7 +34,7 @@ export async function searchImages(query: string, limit = 10, librarySlug?: stri
   if (result.modelName !== models.model) {
     throw new Error(`Text job used unexpected model pair "${result.modelName}" (expected "${models.model}")`);
   }
-  const pairDigest = `image=${models.image_model};text=${models.text_model}`;
+  const pairDigest = `image=${models.image_model}@${models.image_revision};text=${models.text_model}@${models.text_revision}`;
   const vectorLiteral = '[' + result.vector.join(',') + ']';
   const found = await pool.query(
     `SELECT a.id,a.library_id,l.slug AS library_slug,a.asset_type,a.title,a.description,
@@ -55,7 +55,13 @@ export async function searchImages(query: string, limit = 10, librarySlug?: stri
   );
   return {
     query: normalizedQuery,
-    model: { image: models.image_model, text: models.text_model, sharedVectorSpace: true },
+    model: {
+      image: models.image_model,
+      imageRevision: models.image_revision,
+      text: models.text_model,
+      textRevision: models.text_revision,
+      sharedVectorSpace: true,
+    },
     count: found.rowCount || 0,
     results: found.rows,
   };

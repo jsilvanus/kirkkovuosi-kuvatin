@@ -102,7 +102,13 @@ export async function embedAssets(
   const report: Array<Record<string, unknown>> = [];
   const imageEnabled = options.imageEmbeddings ?? (process.env.IMAGE_EMBEDDINGS !== 'false');
   const client = imageEnabled ? new EmbeddingServiceClient() : undefined;
-  let modelPair: { image_model: string; text_model: string; shared_vector_space: boolean } | undefined;
+  let modelPair: {
+    image_model: string;
+    image_revision: string;
+    text_model: string;
+    text_revision: string;
+    shared_vector_space: boolean;
+  } | undefined;
   let modelPairError: string | undefined;
   if (client) {
     try {
@@ -154,7 +160,7 @@ export async function embedAssets(
     }
 
     const modelName = modelPair.image_model;
-    const pairDigest = `image=${modelPair.image_model};text=${modelPair.text_model}`;
+    const pairDigest = `image=${modelPair.image_model}@${modelPair.image_revision};text=${modelPair.text_model}@${modelPair.text_revision}`;
     try {
       const bytes = await readFile(asset.local_path);
       const imageHash = hash(bytes);
