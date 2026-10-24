@@ -2,6 +2,8 @@
 
 Semantic visual search for liturgical Sundays and occasions. This repository includes the first library-ingestion pipeline. It does not generate images.
 
+> **Development status:** This project is not in production. There are no existing installations to preserve, so database migrations and upgrade compatibility are not required at this stage. See [the development status policy](docs/development-status.md); the project owner will update it when that changes.
+
 ## Requirements
 
 - Node.js 22+
