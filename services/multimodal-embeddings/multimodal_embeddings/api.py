@@ -9,7 +9,14 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import queue
-from .model import DEFAULT_IMAGE_MODEL, DEFAULT_TEXT_MODEL, configured_model_name
+from .model import (
+    DEFAULT_IMAGE_MODEL,
+    DEFAULT_TEXT_MODEL,
+    configured_image_model,
+    configured_model_name,
+    configured_shared_vector_space,
+    configured_text_model,
+)
 
 
 @asynccontextmanager
@@ -63,10 +70,10 @@ def health() -> dict[str, str]:
 def models() -> dict[str, object]:
     return {
         "model": configured_model_name(),
-        "image_model": os.getenv("EMBEDDING_IMAGE_MODEL", DEFAULT_IMAGE_MODEL),
-        "text_model": os.getenv("EMBEDDING_TEXT_MODEL", DEFAULT_TEXT_MODEL),
+        "image_model": configured_image_model(),
+        "text_model": configured_text_model(),
         "modalities": ["text", "image"],
-        "shared_vector_space": True,
+        "shared_vector_space": configured_shared_vector_space(),
         "normalization": "L2",
     }
 
