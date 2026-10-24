@@ -12,9 +12,11 @@ Given a list of Sundays and their headings, Bible readings, and optional sermon 
 
 - **Node.js backend with TypeScript.** Use Node.js as the server runtime and TypeScript for backend code. Keep the API backend distinct from the Vite frontend at the project-architecture level, while allowing both to share generated API types or a small common package where useful.
 - **OpenAPI-first API.** Define the HTTP API in a version-controlled OpenAPI specification. Treat the specification as the contract for the backend, frontend API types/client, documentation, and CLI generation.
-- **Generated CLI.** Generate the CLI from the OpenAPI specification using a suitable generator. Avoid maintaining a separate hand-written CLI implementation of API endpoints. If generated output needs a thin wrapper for usability, keep that wrapper small and regenerate the underlying client/commands from the spec.
+- **CLI is a first-class interface from MVP.** Every core workflow available in the UI must also be usable through the CLI, including occasion import/management, asset indexing, batch recommendation, selection/review updates, and XLSX/CSV export. Generate the API client and as much of the CLI as practical from the OpenAPI specification; add thin hand-written command wrappers only where needed for a usable CLI. CLI commands must call the same backend application services/API rather than implement separate business logic. Support machine-readable output (at least JSON) as well as human-readable terminal output.
 - **Small Vite frontend.** Build a lightweight browser UI with Vite, separate from the backend. Do not introduce Next.js, server-side rendering, or a JavaScript server framework. Use TypeScript if helpful, but keep the frontend intentionally small.
 - **Separate deployable parts.** The backend serves the API; the Vite frontend is built into static assets and can be served by any suitable static-file server or reverse proxy. The CLI communicates with the same API.
+- **Shared application core.** Keep domain logic and use cases in reusable application services. HTTP handlers, CLI commands, and the future MCP server must delegate to these services instead of duplicating business logic.
+- **Post-MVP in-process MCP.** After the MVP is complete, add an MCP server that runs in-process with the Node.js application and exposes selected application capabilities as MCP tools/resources. Reuse the existing application services and schemas; do not create a separate MCP-specific implementation of matching, indexing, selection, or export. Keep the MCP interface additive so it does not delay the MVP.
 - **Ollama integration.** Embedding inference is performed through Ollama from the backend, using a configurable model and base URL. The API must report clear errors when Ollama or the selected model is unavailable.
 
 ## 3. Primary workflow
@@ -228,7 +230,7 @@ First inspect the repository and available environment. Then choose the simplest
 - An application service for recommendation and export
 - Reliable XLSX/CSV generation
 
-Keep the API usable independently of the web UI. Core workflows such as importing occasions, indexing assets, requesting recommendations, reviewing/setting selections where appropriate, and exporting results should be available through documented API operations and the generated CLI where they make sense. Do not put business logic exclusively in the frontend or CLI.
+Keep the API usable independently of the web UI. All core workflows must be available through documented API operations and the CLI: importing and managing occasions, indexing assets, generating recommendations in batches, reviewing/updating selections, and exporting results. The CLI must be suitable for interactive use and scripting, with stable exit codes, actionable errors, and JSON output. Do not put business logic exclusively in the frontend, CLI, or HTTP handlers. After MVP, the in-process MCP server should expose appropriate operations by calling the same application services.
 
 Keep the OpenAPI document checked into the repository (for example, under `api/openapi.yaml` or an equivalent clearly documented path). Validate it in CI. Generate CLI/client artifacts reproducibly from it, and document the generator/version and regeneration command. Avoid committing generated output that cannot be reproduced.
 
@@ -292,8 +294,9 @@ Configure the Ollama base URL and embedding model through environment/configurat
 
 **Exit criterion:** an exported file can be imported into Canva and mapped to a real template without manual restructuring of the spreadsheet.
 
-### Phase 4 — Quality and operational hardening
+### Phase 4 — Quality, operational hardening, and post-MVP MCP
 
+- Add an in-process MCP server to expose selected application services as tools/resources, reusing the same core logic as the API and CLI. Keep this work after the MVP and do not make MCP a release blocker for the MVP.
 - Add regression evaluation for matching quality.
 - Improve duplicate/diversity handling and explainability.
 - Add robust re-indexing, backups, and clear operational diagnostics.
