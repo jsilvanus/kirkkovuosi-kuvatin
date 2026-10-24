@@ -3,9 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=22"
-  },
+  "engines": { "node": ">=22" },
   "scripts": {
     "db:migrate": "tsx src/cli.ts migrate",
     "assets:import": "tsx src/cli.ts import-metadata",
@@ -16,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "embedding:types": "openapi-typescript services/multimodal-embeddings/openapi.json -o src/generated/embedding-service.d.ts",
-    "assets:search": "tsx src/cli.ts search"
+    "assets:search": "tsx src/cli.ts search",
+    "assets:evaluate": "tsx src/cli.ts evaluate"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.850.0",
