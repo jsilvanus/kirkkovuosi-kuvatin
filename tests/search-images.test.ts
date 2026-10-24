@@ -33,13 +33,13 @@ test('semantic search excludes vectors whose checksum no longer matches the asse
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
     if (url.endsWith('/v1/jobs/text') && init?.method === 'POST') {
-      return new Response(JSON.stringify({ id: jobId, status: 'queued', modality: 'text', model_name: textModel }), {
+      return new Response(JSON.stringify({ id: jobId, status: 'queued', modality: 'text', model_name: imageModel + '+' + textModel }), {
         status: 202, headers: { 'content-type': 'application/json' },
       });
     }
     if (url.endsWith('/v1/jobs/' + jobId)) {
       return new Response(JSON.stringify({
-        id: jobId, modality: 'text', filename: null, status: 'complete', model_name: textModel,
+        id: jobId, modality: 'text', filename: null, status: 'complete', model_name: imageModel + '+' + textModel,
         dimensions: 2, error: null, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
         embedding: [1, 0],
       }), { status: 200, headers: { 'content-type': 'application/json' } });
