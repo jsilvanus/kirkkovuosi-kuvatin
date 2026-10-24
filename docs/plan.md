@@ -186,8 +186,8 @@ Confirm the exact Canva bulk-create field mapping with a real template during im
 Prefer one row per occasion/design output, with stable columns such as:
 
 - date
-- liturgical_name
-- heading
+- liturgical_name (Sunday/occasion name; include this in every exported row)
+- heading (include the selected Sunday heading in every exported row)
 - bible_readings
 - sermon_notes (optional; include only if desired in the exported content)
 - pictogram_id, pictogram_url or pictogram_path
@@ -198,7 +198,7 @@ Prefer one row per occasion/design output, with stable columns such as:
 
 Asset URLs or paths must be usable by the team's actual Canva workflow; do not assume a local filesystem path can be resolved by Canva. The local VersityGW S3 endpoint may not be reachable by Canva, so export must not assume that a local S3 URL is directly importable; determine whether the team needs a reachable URL, downloaded files, or another supported asset handoff. Determine whether the production workflow needs public/authorised URLs, filenames, or another stable reference. Never export temporary preview URLs.
 
-If a Sunday needs several design variants, support multiple rows for that occasion or a clearly documented variant structure. Do not silently create a combinatorial explosion of every possible asset combination. Export only user-approved selections, and make unselected recommendations distinguishable from chosen assets in the workbook.
+If a Sunday needs several design variants, support multiple rows for that occasion or a clearly documented variant structure. Do not silently create a combinatorial explosion of every possible asset combination. Export only user-approved selections, and make unselected recommendations distinguishable from chosen assets in the workbook. Every exported row must include both the Sunday/occasion name and its selected heading alongside the image selections, so the visual choices remain tied to their liturgical context in Canva and in review.
 
 Include a README/instructions sheet in XLSX explaining column meanings, and optionally an asset/recommendation review sheet. Keep the main data sheet suitable for mapping fields to Canva.
 
@@ -330,6 +330,6 @@ Configure the Ollama base URL and embedding model through environment/configurat
 
 ## 14. Definition of done for the first useful release
 
-A user can provide a list of Sundays with headings and optional readings, sermon notes, or other text; run semantic matching against existing pictograms, photos, and backgrounds; inspect and manually select suggestions in a UI; and export the approved choices in an XLSX/CSV format that works with the team's Canva bulk-creation process.
+A user can provide a list of Sundays with headings and optional readings, sermon notes, or other text; run semantic matching against existing pictograms, photos, and backgrounds; inspect and manually select suggestions in a UI or CLI; and export the approved choices in an XLSX/CSV format that works with the team's Canva bulk-creation process. Every export row includes the Sunday/occasion name and heading alongside its image selections.
 
 No image generation is required or included.
