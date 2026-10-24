@@ -8,7 +8,16 @@ Given a list of Sundays and their headings, Bible readings, and optional sermon 
 
 **This is a retrieval and recommendation application, not an image-generation application.** It must not generate replacement pictures, pictograms, backgrounds, or finished graphics. The visual assets already exist in the organisation's graphical design system and libraries.
 
-## 2. Primary workflow
+## 2. Architecture principles
+
+- **No JavaScript backend.** Implement the application/API backend in a non-JavaScript language, selected after repository and dependency discovery. Do not use Node.js as the server runtime.
+- **OpenAPI-first API.** Define the HTTP API in a version-controlled OpenAPI specification. Treat the specification as the contract for the backend, frontend API types/client, documentation, and CLI generation.
+- **Generated CLI.** Generate the CLI from the OpenAPI specification using a suitable generator. Avoid maintaining a separate hand-written CLI implementation of API endpoints. If generated output needs a thin wrapper for usability, keep that wrapper small and regenerate the underlying client/commands from the spec.
+- **Small Vite frontend.** Build a lightweight browser UI with Vite, separate from the backend. Do not introduce Next.js, server-side rendering, or a JavaScript server framework. Use TypeScript if helpful, but keep the frontend intentionally small.
+- **Separate deployable parts.** The backend serves the API; the Vite frontend is built into static assets and can be served by any suitable static-file server or reverse proxy. The CLI communicates with the same API.
+- **Ollama integration.** Embedding inference is performed through Ollama from the backend, using a configurable model and base URL. The API must report clear errors when Ollama or the selected model is unavailable.
+
+## 3. Primary workflow
 
 1. **Load the occasions.** Import or enter a list of Sundays/occasions. Each entry can include a date, liturgical name, one or more headings, Bible readings or their text, and optional sermon notes or other text.
 2. **Prepare the asset library.** Index the existing pictograms, photos, and backgrounds as separate asset types. Read available metadata and descriptions; allow optional keywords and human-written descriptions.
@@ -19,7 +28,7 @@ Given a list of Sundays and their headings, Bible readings, and optional sermon 
 
 The workflow should support processing many Sundays together, while allowing a user to inspect and edit each Sunday's recommendations individually.
 
-## 3. Goals and non-goals
+## 4. Goals and non-goals
 
 ### Goals
 
@@ -40,7 +49,7 @@ The workflow should support processing many Sundays together, while allowing a u
 - Treating an embedding similarity score as a definitive theological judgement.
 - Requiring all assets to be manually keyword-tagged before they can be searched.
 
-## 4. Inputs and data model
+## 5. Inputs and data model
 
 ### Liturgical occasion
 
@@ -73,7 +82,7 @@ Each asset should support:
 
 Asset indexing should not modify the original files. Re-index when an asset changes or when the embedding model/version changes.
 
-## 5. Semantic matching approach
+## 6. Semantic matching approach
 
 ### Ollama and embedding models
 
@@ -112,7 +121,7 @@ Weights are tunable and should be validated with human judgements. Missing input
 - Do not impose keyword requirements. Keywords and descriptions enrich semantic matching and can provide supplementary ranking signals.
 - Keep ranking deterministic for the same inputs, model versions, and settings where feasible.
 
-## 6. User interface
+## 7. User interface
 
 The UI should prioritise a clear review workflow over complex configuration.
 
@@ -141,7 +150,7 @@ For each occasion:
 - Allow users to review occasions one by one and see which are still incomplete.
 - Allow export of all reviewed occasions or a selected subset.
 
-## 7. Spreadsheet and Canva export
+## 8. Spreadsheet and Canva export
 
 Spreadsheet export is a core deliverable, not an afterthought. The purpose is to create a reliable data source for Canva's bulk creation workflow.
 
@@ -173,7 +182,7 @@ If a Sunday needs several design variants, support multiple rows for that occasi
 
 Include a README/instructions sheet in XLSX explaining column meanings, and optionally an asset/recommendation review sheet. Keep the main data sheet suitable for mapping fields to Canva.
 
-## 8. Asset ingestion and indexing
+## 9. Asset ingestion and indexing
 
 - Accept the actual formats present in the existing libraries; discover these before setting final format support.
 - Preserve original filenames and stable IDs.
@@ -186,7 +195,7 @@ Include a README/instructions sheet in XLSX explaining column meanings, and opti
 
 The graphical design-system PDF documentation will be supplied to the implementation agent later. Once available, review it and record applicable asset categories, naming conventions, usage restrictions, dimensions, colour guidance, and export requirements in the implementation decisions.
 
-## 9. Evaluation and quality
+## 10. Evaluation and quality
 
 Before choosing a model or final ranking weights, create a small evaluation set with representative Finnish liturgical occasions and assets. Have knowledgeable users mark useful and poor matches.
 
@@ -202,25 +211,32 @@ Evaluate at least:
 
 Compare candidate models and ranking configurations using the same evaluation examples. Keep a small set of expected matches as regression tests. Human review remains authoritative.
 
-## 10. Technical architecture: decisions to make deliberately
+## 11. Technical architecture: decisions to make deliberately
 
 Do not commit to a large infrastructure or a particular vector database before learning the size and format of the libraries.
 
 First inspect the repository and available environment. Then choose the simplest maintainable implementation that supports:
 
+- A small non-JavaScript backend and HTTP API
+- A version-controlled OpenAPI specification as the API contract
+- A generated CLI that uses the same API contract
+- A small, separate Vite frontend built as static assets
 - A persistent store for occasions, assets, selections, and indexing metadata
 - Vector storage and similarity search appropriate to the expected collection size
 - A background/batch indexing path for asset embeddings
 - An Ollama-backed embedding service behind a small provider interface
 - An application service for recommendation and export
-- A browser UI for review
 - Reliable XLSX/CSV generation
+
+Keep the API usable independently of the web UI. Core workflows such as importing occasions, indexing assets, requesting recommendations, reviewing/setting selections where appropriate, and exporting results should be available through documented API operations and the generated CLI where they make sense. Do not put business logic exclusively in the frontend or CLI.
+
+Keep the OpenAPI document checked into the repository (for example, under `api/openapi.yaml` or an equivalent clearly documented path). Validate it in CI. Generate CLI/client artifacts reproducibly from it, and document the generator/version and regeneration command. Avoid committing generated output that cannot be reproduced.
 
 For a modest asset collection, a relational database with vector support or even a simple local vector index may be sufficient. Encapsulate embedding generation and vector search behind interfaces so models and storage can be replaced without rewriting the user workflow.
 
 Configure the Ollama base URL and embedding model through environment/configuration settings. Support a locally running Ollama instance and, if needed, a separately hosted Ollama server on a trusted network. Do not expose Ollama publicly without appropriate network controls. Keep secrets and model credentials out of the repository. Do not make a cloud embedding API mandatory.
 
-## 11. Privacy, rights, and text handling
+## 12. Privacy, rights, and text handling
 
 - Use only Bible text that the organisation is permitted to process and export; retain references even when full text cannot be stored.
 - Keep sermon notes private to the deployment and do not send them to external model providers. Ollama is the assumed local inference path, though the actual server's location and network must be configured deliberately.
@@ -228,21 +244,27 @@ Configure the Ollama base URL and embedding model through environment/configurat
 - Avoid sending complete source texts to third-party services by default.
 - Make data retention, backups, and deletion behaviour explicit once persistence is selected.
 
-## 12. Suggested implementation phases
+## 13. Suggested implementation phases
 
 ### Phase 0 — Repository and data discovery
 
 - Inspect the repository and document the current state.
+- Select a non-JavaScript backend language/framework based on the existing repository and the needs of image processing, embeddings, and XLSX export; document the rationale.
+- Define the first OpenAPI contract and choose a reproducible OpenAPI-based CLI generation approach.
+- Set up the minimal Vite frontend skeleton, separate from the API backend.
 - Inspect sample occasion data and the asset libraries.
 - Identify available metadata and file formats.
 - Review the design-system documentation when supplied.
 - Define a small representative evaluation set.
 - Prototype Ollama-accessible embedding models and verify Finnish semantic matching. Verify direct image embedding support separately instead of assuming it exists.
 
-**Exit criterion:** a documented, evidence-based model and architecture choice, with example matches that users consider useful and a clear statement of whether first-release matching uses text metadata, direct image embeddings, or both.
+**Exit criterion:** a documented, evidence-based model and architecture choice, with example matches that users consider useful and a clear statement of whether first-release matching uses text metadata, direct image embeddings, or both; plus an agreed non-JavaScript backend, initial OpenAPI contract, generated-CLI approach, and minimal Vite app.
 
 ### Phase 1 — Working semantic matching prototype
 
+- Implement the first API operations from the OpenAPI contract.
+- Generate the CLI/client from the specification and verify it against the running API.
+- Connect the Vite frontend to the API without adding backend responsibilities to the frontend toolchain.
 - Ingest a small sample of occasions and all three asset categories.
 - Compute and persist asset embeddings through Ollama.
 - Generate ranked suggestions from headings and supplied texts.
@@ -277,7 +299,7 @@ Configure the Ollama base URL and embedding model through environment/configurat
 - Add robust re-indexing, backups, and clear operational diagnostics.
 - Review the implementation against the supplied design system and the team's actual workflow.
 
-## 13. Definition of done for the first useful release
+## 14. Definition of done for the first useful release
 
 A user can provide a list of Sundays with headings and optional readings, sermon notes, or other text; run semantic matching against existing pictograms, photos, and backgrounds; inspect and manually select suggestions in a UI; and export the approved choices in an XLSX/CSV format that works with the team's Canva bulk-creation process.
 
