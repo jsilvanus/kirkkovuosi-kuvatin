@@ -93,12 +93,13 @@ export async function evaluateSearchFile(filePath: string, k = 10) {
       metrics: scoreRanking(rankedAssetIds, item.relevant_asset_ids, k),
     });
   }
-  const metricNames: Array<keyof RankingMetrics> = [
-    'recall_at_k', 'precision_at_k', 'reciprocal_rank', 'ndcg_at_k',
-  ];
-  const mean = Object.fromEntries(metricNames.map((name) => [
-    name,
-    reports.reduce((sum, report) => sum + report.metrics[name], 0) / reports.length,
-  ])) as RankingMetrics;
+  const average = (name: keyof RankingMetrics) =>
+    reports.reduce((sum, report) => sum + report.metrics[name], 0) / reports.length;
+  const mean: RankingMetrics = {
+    recall_at_k: average('recall_at_k'),
+    precision_at_k: average('precision_at_k'),
+    reciprocal_rank: average('reciprocal_rank'),
+    ndcg_at_k: average('ndcg_at_k'),
+  };
   return { evaluation_cases: reports.length, k, mean_metrics: mean, cases: reports };
 }
