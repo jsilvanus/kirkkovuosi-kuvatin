@@ -244,7 +244,7 @@ First inspect the repository and available environment. Then choose the simplest
 - A small, separate Vite frontend built as static assets
 - A persistent store for public asset metadata and embeddings, plus workflow-scoped occasion text, selections, and review state with explicit expiry timestamps
 - Local S3-compatible object storage through the provided VersityGW service for original assets and derived previews/thumbnails
-- JSON-based persistence for liturgical-text and visual-asset embedding records, with model/version metadata and a replaceable similarity-search/index layer
+- PostgreSQL with pgvector for liturgical-text and visual-asset embedding records and similarity search, with model/version metadata and a replaceable search layer
 - Vector storage and similarity search appropriate to the expected collection size
 - A background/batch indexing path for asset embeddings
 - An Ollama-backed embedding service behind a small provider interface
@@ -293,7 +293,7 @@ Configure the Ollama base URL and embedding model through environment/configurat
 - Generate the CLI/client from the specification and verify it against the running API.
 - Connect the Vite frontend to the API without adding backend responsibilities to the frontend toolchain.
 - Ingest a small sample of occasions and all three asset categories.
-- Compute embeddings through Ollama and persist versioned JSON embedding records for liturgical text and each supported asset type.
+- Compute embeddings through Ollama and persist versioned PostgreSQL embedding records using pgvector for liturgical text and each supported asset type.
 - Generate ranked suggestions from headings and supplied texts.
 - Add basic manual semantic search over each asset library, with ranked previews and metadata.
 - Provide a basic UI or review view for inspecting results.
