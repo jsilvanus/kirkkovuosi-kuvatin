@@ -6,7 +6,9 @@ services:
       EMBEDDING_DATA_DIR: /data
       HF_HOME: /models
       EMBEDDING_IMAGE_MODEL: ${EMBEDDING_IMAGE_MODEL:-sentence-transformers/clip-ViT-B-32}
+      EMBEDDING_IMAGE_REVISION: ${EMBEDDING_IMAGE_REVISION:-327ab67}
       EMBEDDING_TEXT_MODEL: ${EMBEDDING_TEXT_MODEL:-sentence-transformers/clip-ViT-B-32-multilingual-v1}
+      EMBEDDING_TEXT_REVISION: ${EMBEDDING_TEXT_REVISION:-58edf8cada9e398793dca955574a48cbb7f18be2}
       EMBEDDING_DEVICE: ${EMBEDDING_DEVICE:-cpu}
     ports:
       - "127.0.0.1:8091:8091"
