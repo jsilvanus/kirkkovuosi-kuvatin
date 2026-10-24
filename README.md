@@ -7,11 +7,11 @@ Semantic visual search for liturgical Sundays and occasions. This repository inc
 ## Requirements
 
 - Node.js 22+
-- PostgreSQL with pgvector (the included Compose service uses `pgvector/pgvector:pg17`)
+- PostgreSQL with pgvector (the included Compose service uses pgvector/pgvector:pg17)
 - An S3-compatible service, such as VersityGW, and a bucket created by an operator
 - Ollama with one or more text-embedding models pulled
 
-Copy `.env.example` to `.env`, set strong local credentials/endpoints, then run:
+Copy .env.example to .env, set strong local credentials/endpoints, then run:
 
 ```sh
 docker compose up -d db
@@ -22,7 +22,7 @@ ollama pull nomic-embed-text
 
 ## Ingestion steps
 
-Create a JSON array or JSON Lines manifest. Example: `examples/assets.manifest.example.json`. Every record names its library and source system. Import metadata independently from file upload:
+Create a JSON array or JSON Lines manifest. Example: examples/assets.manifest.example.json. Every record names its library and source system. Import metadata independently from file upload:
 
 ```sh
 npm run assets:import -- ./assets.json
@@ -37,12 +37,12 @@ Or run all steps in order:
 npm run assets:pipeline -- ./assets.json ./downloads nomic-embed-text
 ```
 
-Text embedding model names can be passed as extra arguments to `assets:embed`; otherwise `EMBEDDING_MODELS` is used. Metadata-text embeddings use Ollama `/api/embed`. Image-pixel embeddings use the separate aligned multilingual CLIP service; start it before running image embedding jobs. See `docs/semantic-search.md` for setup and search instructions.
+Text embedding model names can be passed as extra arguments to assets:embed; otherwise EMBEDDING_MODELS is used. Metadata-text embeddings use Ollama /api/embed. Image-pixel embeddings use the separate aligned multilingual CLIP service; start it before running image embedding jobs. See [semantic search setup](docs/semantic-search.md) for setup and search instructions.
 
 ## Idempotency and deduplication
 
 - Every asset belongs to an explicit library. Deduplication is **within a library only**; identical files in two libraries may have independent records and objects.
-- PostgreSQL stores the SHA-256 of verified file bytes and enforces a unique `(library_id, sha256)` constraint. A filename is not proof of identity.
+- PostgreSQL stores the SHA-256 of verified file bytes and enforces a unique (library_id, sha256) constraint. A filename is not proof of identity.
 - Metadata import upserts stable source IDs within a library. Keep source IDs when available. The source-association table preserves source provenance and rights metadata separately from the canonical file asset.
 - Reconciliation hashes each file before upload. If identical bytes already exist in the same library, it reassigns source associations to the existing asset and removes the duplicate asset record. Different libraries are never deduplicated against each other.
 - S3 keys include library ID and SHA-256. Upload is only attempted for files verified by reconciliation. Existing objects are checked before use.
@@ -52,21 +52,24 @@ Review reconciliation reports before treating the library as ready. Preserve sou
 
 ## Multimodal image/text embedding service
 
-A separate Python API and worker are available under `services/multimodal-embeddings`. They use a documented, aligned CLIP image/text model pair and a durable SQLite queue shared by the API and worker. Start them with `docker compose -f docker-compose.embeddings.yml up --build -d`; the API is bound to `127.0.0.1:8091`. See the service README for API examples and security/operational limitations. This service currently returns vectors to the caller; the main application remains responsible for storing vectors in `asset_embeddings` with model identity and content checksums.
+A separate Python API and worker are available under services/multimodal-embeddings. They use a documented, aligned CLIP image/text model pair and a durable SQLite queue shared by the API and worker. Start them with docker compose -f docker-compose.embeddings.yml up --build -d; the API is bound to 127.0.0.1:8091. See the [service README](services/multimodal-embeddings/README.md) for API examples and security/operational limitations. This service currently returns vectors to the caller; the main application remains responsible for storing vectors in asset_embeddings with model identity and content checksums.
+
+## Semantic search and evaluation
+
+Run Finnish text-to-image semantic search with npm run assets:search -- 'Jeesus siunaa lapsia' 10. To measure quality against human-labelled examples, create a JSONL evaluation set and run npm run assets:evaluate -- ./evaluation.jsonl 10. See [semantic search evaluation](docs/search-evaluation.md) for the format and Recall@k, Precision@k, MRR, and nDCG metrics.
 
 ## Current limitations
 
 - Source-specific EVL metadata adapters are not yet implemented. The current supported ingestion format is JSON/JSONL; manually downloaded files can be reconciled against manifest paths or filenames.
-- Preview/thumbnail generation, search API/UI, occasion workflows, and XLSX/Canva export remain later steps. CLI semantic search and stored image-pixel embeddings are implemented, but retrieval quality still needs evaluation on representative Finnish church images.
+- Preview/thumbnail generation, search API/UI, occasion workflows, and XLSX/Canva export remain later steps. Retrieval quality must be evaluated on representative Finnish church images using human-reviewed labels.
 - The pipeline expects a source ID for reliable source-record upserts. Records without stable IDs can be imported, but should be reviewed for ambiguity.
-
 
 ## Embedding service contract
 
-The standalone Python service's public contract is maintained in `services/multimodal-embeddings/openapi.json` and served at `/openapi.json`. The TypeScript types are generated from that OpenAPI document, not maintained by hand:
+The standalone Python service's public contract is maintained in services/multimodal-embeddings/openapi.json and served at /openapi.json. The TypeScript types are generated from that OpenAPI document, not maintained by hand:
 
 ```sh
 npm run embedding:types
 ```
 
-Use `src/embedding-service-client.ts` for typed job submission and polling. Set `EMBEDDING_SERVICE_URL` to the service base URL when it is not running on the local default. The Python service owns embedding computation and its durable job queue; the main application owns asset records and persistence of returned vectors into PostgreSQL/pgvector.
+Use src/embedding-service-client.ts for typed job submission and polling. Set EMBEDDING_SERVICE_URL to the service base URL when it is not running on the local default. The Python service owns embedding computation and its durable job queue; the main application owns asset records and persistence of returned vectors into PostgreSQL/pgvector.
