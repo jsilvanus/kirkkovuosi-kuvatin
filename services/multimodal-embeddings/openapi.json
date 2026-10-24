@@ -3,7 +3,7 @@
   "info": {
     "title": "Kirkkovuosi-Kuvatin Multimodal Embedding Service",
     "version": "0.1.0",
-    "description": "Asynchronous image and text embeddings from an aligned multilingual CLIP model pair. Image and text vectors use a shared vector space."
+    "description": "Asynchronous image and text embeddings. The default multilingual CLIP pair shares a vector space; custom pairs must be explicitly declared compatible."
   },
   "servers": [
     {
@@ -196,7 +196,7 @@
           },
           "shared_vector_space": {
             "type": "boolean",
-            "const": true
+            "description": "True for the documented default pair, or for a custom pair only when the operator explicitly asserts compatibility."
           },
           "normalization": {
             "type": "string",
