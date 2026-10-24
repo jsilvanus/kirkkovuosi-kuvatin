@@ -5,7 +5,7 @@ import os
 import time
 
 from . import queue
-from .model import embed_image, embed_text
+from .model import configured_model_name, embed_image, embed_text
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -42,7 +42,7 @@ def process_one() -> bool:
 def main() -> None:
     queue.initialize()
     idle_sleep = float(os.getenv("EMBEDDING_WORKER_POLL_SECONDS", "0.5"))
-    logger.info("worker starting model=%s device=%s", os.getenv("EMBEDDING_MODEL", "sentence-transformers/clip-ViT-B-32-multilingual-v1"), os.getenv("EMBEDDING_DEVICE", "auto"))
+    logger.info("worker starting models=%s device=%s", configured_model_name(), os.getenv("EMBEDDING_DEVICE", "auto"))
     while True:
         if not process_one():
             time.sleep(max(0.1, idle_sleep))
