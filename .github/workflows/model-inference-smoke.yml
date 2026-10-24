@@ -11,7 +11,7 @@ jobs:
     env:
       RUN_MODEL_INFERENCE_TESTS: "1"
       EMBEDDING_DEVICE: cpu
-      HF_HOME: ~/.cache/huggingface
+      HF_HOME: /home/runner/.cache/huggingface
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
