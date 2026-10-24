@@ -64,3 +64,14 @@ This roadmap groups the project into six delivery phases. The detailed requireme
 - Extend design-system constraints and metadata support based on the supplied documentation and team feedback.
 
 **Exit criteria:** extensions build on the stable API and shared application core without duplicating business logic or delaying the MVP.
+
+## Idempotency and library-scoped deduplication requirements
+
+Implementation and acceptance tests must enforce these invariants:
+
+- Every asset belongs to one explicit library; there is no global shared-asset catalogue.
+- Persist SHA-256 for original file bytes and enforce a database uniqueness constraint on library plus checksum. Identical bytes in the same library reuse one file asset/object; identical bytes in different libraries remain independent.
+- Metadata import is idempotent by library and source identity. Keep distinct source records/provenance and all relevant rights/attribution even when they point to one deduplicated file asset.
+- Hash files before upload; skip upload when the same checksum already exists in that library. Reconcile by checksum, not filename alone, and report ambiguous or changed files.
+- Embedding records are versioned by model and input checksum. Changes invalidate only the relevant inputs; other models and libraries remain untouched.
+- Test repeat runs, different filenames with identical bytes, cross-library duplicates, changed bytes at a reused filename, concurrent ingestion, and preservation of distinct credits/licences.
