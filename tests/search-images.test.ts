@@ -48,10 +48,11 @@ test('semantic search excludes vectors whose checksum no longer matches the asse
   }) as typeof fetch;
 
   let libraryId: string | undefined;
+  const librarySlug = 'test-search-' + randomUUID();
   try {
     const library = await pool.query(
       "INSERT INTO libraries(slug,name,source_organisation,source_collection) VALUES ($1,$2,$3,$4) RETURNING id",
-      ['test-search-' + randomUUID(), 'Search test', 'test-suite', 'stale-vector'],
+      [librarySlug, 'Search test', 'test-suite', 'stale-vector'],
     );
     libraryId = library.rows[0].id;
     const asset = await pool.query(
@@ -66,9 +67,10 @@ test('semantic search excludes vectors whose checksum no longer matches the asse
       [assetId, imageModel, modelDigest],
     );
 
-    const response = await searchImages('test query', 10, 'test-search-' + libraryId);
-    // The random library slug is intentionally not inferred from the UUID.
-    assert.equal(response.count, 0);
+    const response = await searchImages('test query', 10, librarySlug);
+    assert.equal(response.count, 1);
+    assert.equal(response.results.length, 1);
+    assert.equal(response.results[0].id, assetId);
   } finally {
     globalThis.fetch = originalFetch;
     if (libraryId) await pool.query('DELETE FROM libraries WHERE id=$1', [libraryId]);
