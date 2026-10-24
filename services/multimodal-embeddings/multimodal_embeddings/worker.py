@@ -21,6 +21,13 @@ def process_one() -> bool:
     job_id = job["id"]
     image_path = job.get("image_path")
     try:
+        active_model = configured_model_name()
+        if job["model_name"] != active_model:
+            raise RuntimeError(
+                "Job was queued for model pair "
+                f"{job['model_name']!r}, but worker is configured for {active_model!r}; "
+                "re-submit the job using the active model configuration"
+            )
         if job["modality"] == "text":
             vector = embed_text(job["text_input"])
         elif job["modality"] == "image" and image_path:
@@ -41,6 +48,9 @@ def process_one() -> bool:
 
 def main() -> None:
     queue.initialize()
+    recovered = queue.recover_interrupted_jobs()
+    if recovered:
+        logger.warning("requeued %d jobs left running by an interrupted worker", recovered)
     idle_sleep = float(os.getenv("EMBEDDING_WORKER_POLL_SECONDS", "0.5"))
     logger.info("worker starting models=%s device=%s", configured_model_name(), os.getenv("EMBEDDING_DEVICE", "auto"))
     while True:
