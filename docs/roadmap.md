@@ -15,7 +15,7 @@ This roadmap groups the project into six delivery phases. The detailed requireme
 ## Phase 2 — Asset ingestion and independent library search
 
 - Integrate the provided VersityGW S3-compatible storage for originals and previews where appropriate.
-- Build incremental asset indexing and versioned JSON embedding records for pictograms, photos, and backgrounds as supported.
+- Build incremental asset indexing and store asset metadata plus versioned embeddings in PostgreSQL with pgvector for similarity search, for pictograms, photos, and backgrounds as supported.
 - Add independent semantic and keyword/metadata search for each library.
 - Expose search through the API, CLI, and a simple web UI, with ranked results, previews, metadata, and filters.
 
@@ -54,7 +54,7 @@ This roadmap groups the project into six delivery phases. The detailed requireme
 ## Phase 6 — Post-MVP extensions
 
 - Add an in-process MCP server exposing selected search, recommendation, review, and export capabilities through the shared application services.
-- Consider a faster vector index if library size or latency warrants it.
+- Evaluate and tune pgvector indexing (for example, exact search versus an approximate index) if library size or latency warrants it.
 - Improve duplicate/diversity handling and explainability.
 - Extend design-system constraints and metadata support based on the supplied documentation and team feedback.
 
