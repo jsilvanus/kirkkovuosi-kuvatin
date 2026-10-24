@@ -1,0 +1,10 @@
+import 'dotenv/config';
+import { migrate, pool } from './db.js';
+import { loadManifest } from './manifest.js';
+import { importMetadata } from './import-metadata.js';
+import { reconcileFiles } from './reconcile.js';
+import { uploadAssets } from './upload-assets.js';
+import { embedAssets } from './embed-assets.js';
+const [command,...args]=process.argv.slice(2);const out=(x:unknown)=>console.log(JSON.stringify(x,null,2));
+async function main(){switch(command){case 'migrate':await migrate();out({status:'ok'});break;case 'import-metadata':if(!args[0])throw new Error('Usage: npm run assets:import -- ./assets.json');out(await importMetadata(await loadManifest(args[0])));break;case 'reconcile':if(!args[0])throw new Error('Usage: npm run assets:reconcile -- ./downloads');out(await reconcileFiles(args[0]));break;case 'upload':out(await uploadAssets());break;case 'embed':out(await embedAssets(args.length?args:undefined));break;case 'pipeline':if(!args[0]||!args[1])throw new Error('Usage: npm run assets:pipeline -- ./assets.json ./downloads [model-a model-b]');await migrate();out({metadata:await importMetadata(await loadManifest(args[0]))});out({files:await reconcileFiles(args[1])});out({uploads:await uploadAssets()});out({embeddings:await embedAssets(args.slice(2).length?args.slice(2):undefined)});break;default:throw new Error('Commands: migrate, import-metadata, reconcile, upload, embed, pipeline');}}
+main().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>pool.end());
