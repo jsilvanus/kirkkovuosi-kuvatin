@@ -48,3 +48,20 @@ def test_rejects_invalid_base64_and_non_image():
 def test_empty_text_is_rejected():
     with pytest.raises(ValueError):
         queue.enqueue_text("  ", "test-model")
+
+
+def test_interrupted_running_jobs_are_requeued():
+    created = queue.enqueue_text("test retry", "test-model")
+    assert queue.claim_next()["id"] == created["id"]
+    assert queue.recover_interrupted_jobs() == 1
+    result = queue.get_job(created["id"])
+    assert result["status"] == "queued"
+    assert result["error"] is None
+
+
+def test_completed_jobs_are_not_requeued():
+    created = queue.enqueue_text("completed already", "test-model")
+    queue.claim_next()
+    queue.complete_job(created["id"], [1.0])
+    assert queue.recover_interrupted_jobs() == 0
+    assert queue.get_job(created["id"])["status"] == "complete"

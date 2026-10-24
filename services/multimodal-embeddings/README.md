@@ -10,7 +10,7 @@ Defaults:
 
 This is intentionally a paired setup, not one checkpoint pretending to encode both modalities. The multilingual model card says its text encoder was distilled to match the original CLIP image encoder, and lists Finnish among its supported languages. Both encoders should produce 512-dimensional vectors. The service normalizes vectors to unit length.
 
-Configure with `EMBEDDING_IMAGE_MODEL` and `EMBEDDING_TEXT_MODEL`. Only change these as a compatible pair whose documented contract puts text and images in the same vector space. Model revisions are not pinned yet; before production indexing, pin immutable Hugging Face revisions and include them in the index/model identity. Changing either model/revision requires re-embedding.
+Configure with `EMBEDDING_IMAGE_MODEL` and `EMBEDDING_TEXT_MODEL`. The service advertises the shared-vector-space contract for the documented default pair. If either model is changed, `/v1/models` returns `shared_vector_space: false` unless `EMBEDDING_SHARED_VECTOR_SPACE=true` is explicitly set. That override is an operator assertion, not an automatic compatibility check: use it only after confirming the models were trained/aligned for the same vector space. Model revisions are not pinned yet; before production indexing, pin immutable Hugging Face revisions and include them in the index/model identity. Changing either model/revision requires re-embedding.
 
 ## Run locally
 
@@ -46,7 +46,7 @@ The canonical contract is `openapi.json`, served at `/openapi.json`. The main Ty
 ## API
 
 - `GET /health` — liveness and configured model pair (does not guarantee the models have loaded).
-- `GET /v1/models` — model pair, modalities, normalization, and shared-space contract.
+- `GET /v1/models` — model pair, modalities, normalization, and whether the configured pair is declared to share a vector space.
 - `POST /v1/jobs/text` — JSON `{"text":"pappi jakaa ehtoollista kirkossa"}`.
 - `POST /v1/jobs/image` — JSON `{"image_base64":"...","filename":"asset.jpg"}` (raw base64, no data-URL prefix).
 - `GET /v1/jobs/{job_id}` — queued/running/complete/failed status and, on success, the vector, dimensions, model identity, and modality.
@@ -56,6 +56,8 @@ The POST endpoints return `202 Accepted` with a job ID. Image bytes are written 
 ## Queue and data handling
 
 `EMBEDDING_DATA_DIR` contains `queue.sqlite3` and image spool files; mount it as a persistent volume shared by API and worker. SQLite WAL and short transactions let the API and worker access the same queue. Do not point separate hosts at a local SQLite file; use a networked queue/database before scaling across hosts.
+
+When the worker starts, it requeues jobs left in `running` state by a prior interrupted process. A job submitted under a different model pair is failed rather than embedded by the new pair and mislabeled with the old identity. Run a single worker against a queue unless worker leases/heartbeats are introduced; startup recovery assumes the previous worker is no longer active.
 
 The service limits each uploaded image to 15 MiB and validates it with Pillow before enqueueing. It does not fetch caller-supplied URLs, avoiding SSRF. Put authentication and request-size limits in front of it before exposing it beyond a trusted development network. Configure retention/cleanup before production; no automatic deletion is enabled yet.
 

@@ -14,8 +14,25 @@ DEFAULT_IMAGE_MODEL = "sentence-transformers/clip-ViT-B-32"
 DEFAULT_TEXT_MODEL = "sentence-transformers/clip-ViT-B-32-multilingual-v1"
 
 
+def configured_image_model() -> str:
+    return os.getenv("EMBEDDING_IMAGE_MODEL", DEFAULT_IMAGE_MODEL)
+
+
+def configured_text_model() -> str:
+    return os.getenv("EMBEDDING_TEXT_MODEL", DEFAULT_TEXT_MODEL)
+
+
 def configured_model_name() -> str:
-    return f"{os.getenv('EMBEDDING_IMAGE_MODEL', DEFAULT_IMAGE_MODEL)}+{os.getenv('EMBEDDING_TEXT_MODEL', DEFAULT_TEXT_MODEL)}"
+    return f"{configured_image_model()}+{configured_text_model()}"
+
+
+def configured_shared_vector_space() -> bool:
+    """Only advertise compatibility for the known pair or an explicit operator assertion."""
+    image_model = configured_image_model()
+    text_model = configured_text_model()
+    if image_model == DEFAULT_IMAGE_MODEL and text_model == DEFAULT_TEXT_MODEL:
+        return True
+    return os.getenv("EMBEDDING_SHARED_VECTOR_SPACE", "").strip().lower() in {"1", "true", "yes"}
 
 
 def configured_device() -> str:
@@ -31,8 +48,8 @@ def configured_device() -> str:
 @lru_cache(maxsize=1)
 def load_models() -> tuple[SentenceTransformer, SentenceTransformer]:
     device = configured_device()
-    image_model = SentenceTransformer(os.getenv("EMBEDDING_IMAGE_MODEL", DEFAULT_IMAGE_MODEL), device=device)
-    text_model = SentenceTransformer(os.getenv("EMBEDDING_TEXT_MODEL", DEFAULT_TEXT_MODEL), device=device)
+    image_model = SentenceTransformer(configured_image_model(), device=device)
+    text_model = SentenceTransformer(configured_text_model(), device=device)
     return image_model, text_model
 
 
