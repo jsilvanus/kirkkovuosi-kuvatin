@@ -3,3 +3,6 @@ dist/
 .env
 data/
 *.log
+
+# Generated from the embedding service OpenAPI contract
+src/generated/embedding-service.d.ts
