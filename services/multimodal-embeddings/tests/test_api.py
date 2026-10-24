@@ -58,6 +58,18 @@ def test_model_contract_rejects_unverified_custom_pair(tmp_path, monkeypatch):
         assert response.json()["shared_vector_space"] is False
 
 
+def test_model_contract_rejects_unverified_revision_change(tmp_path, monkeypatch):
+    monkeypatch.setattr(queue, "DATA_DIR", tmp_path)
+    monkeypatch.delenv("EMBEDDING_IMAGE_MODEL", raising=False)
+    monkeypatch.delenv("EMBEDDING_TEXT_MODEL", raising=False)
+    monkeypatch.setenv("EMBEDDING_TEXT_REVISION", "different-commit")
+    monkeypatch.delenv("EMBEDDING_SHARED_VECTOR_SPACE", raising=False)
+    with TestClient(app) as client:
+        response = client.get("/v1/models")
+        assert response.status_code == 200
+        assert response.json()["shared_vector_space"] is False
+
+
 def test_model_contract_allows_explicit_custom_pair_assertion(tmp_path, monkeypatch):
     monkeypatch.setattr(queue, "DATA_DIR", tmp_path)
     monkeypatch.setenv("EMBEDDING_IMAGE_MODEL", "custom/image-model")
