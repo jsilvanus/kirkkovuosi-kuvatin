@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from . import queue
-from .model import DEFAULT_MODEL, configured_model_name
+from .model import DEFAULT_IMAGE_MODEL, DEFAULT_TEXT_MODEL, configured_model_name
 
 
 @asynccontextmanager
@@ -19,7 +19,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(
     title="Kirkkovuosi-Kuvatin Multimodal Embedding Service",
     version="0.1.0",
-    description="Asynchronous image and text embeddings from one shared multilingual image-text model.",
+    description="Asynchronous image and text embeddings from an aligned multilingual CLIP model pair.",
     lifespan=lifespan,
 )
 
@@ -46,7 +46,8 @@ def health() -> dict[str, str]:
 def models() -> dict[str, object]:
     return {
         "model": configured_model_name(),
-        "default_model": DEFAULT_MODEL,
+        "image_model": os.getenv("EMBEDDING_IMAGE_MODEL", DEFAULT_IMAGE_MODEL),
+        "text_model": os.getenv("EMBEDDING_TEXT_MODEL", DEFAULT_TEXT_MODEL),
         "modalities": ["text", "image"],
         "shared_vector_space": True,
         "normalization": "L2",
