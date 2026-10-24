@@ -6,6 +6,7 @@ from PIL import Image
 
 from multimodal_embeddings.api import app
 from multimodal_embeddings import queue
+from multimodal_embeddings.model import DEFAULT_IMAGE_MODEL, DEFAULT_TEXT_MODEL
 
 
 def test_api_enqueues_text_and_returns_status(tmp_path, monkeypatch):
@@ -27,10 +28,36 @@ def test_api_rejects_blank_text(tmp_path, monkeypatch):
         assert response.status_code == 422
 
 
-def test_model_contract_declares_shared_space(tmp_path, monkeypatch):
+def test_model_contract_declares_shared_space_for_default_pair(tmp_path, monkeypatch):
     monkeypatch.setattr(queue, "DATA_DIR", tmp_path)
+    monkeypatch.delenv("EMBEDDING_IMAGE_MODEL", raising=False)
+    monkeypatch.delenv("EMBEDDING_TEXT_MODEL", raising=False)
+    monkeypatch.delenv("EMBEDDING_SHARED_VECTOR_SPACE", raising=False)
     with TestClient(app) as client:
         response = client.get("/v1/models")
         assert response.status_code == 200
         assert response.json()["shared_vector_space"] is True
-        assert response.json()["image_model"] != response.json()["text_model"]
+        assert response.json()["image_model"] == DEFAULT_IMAGE_MODEL
+        assert response.json()["text_model"] == DEFAULT_TEXT_MODEL
+
+
+def test_model_contract_rejects_unverified_custom_pair(tmp_path, monkeypatch):
+    monkeypatch.setattr(queue, "DATA_DIR", tmp_path)
+    monkeypatch.setenv("EMBEDDING_IMAGE_MODEL", "custom/image-model")
+    monkeypatch.setenv("EMBEDDING_TEXT_MODEL", "custom/text-model")
+    monkeypatch.delenv("EMBEDDING_SHARED_VECTOR_SPACE", raising=False)
+    with TestClient(app) as client:
+        response = client.get("/v1/models")
+        assert response.status_code == 200
+        assert response.json()["shared_vector_space"] is False
+
+
+def test_model_contract_allows_explicit_custom_pair_assertion(tmp_path, monkeypatch):
+    monkeypatch.setattr(queue, "DATA_DIR", tmp_path)
+    monkeypatch.setenv("EMBEDDING_IMAGE_MODEL", "custom/image-model")
+    monkeypatch.setenv("EMBEDDING_TEXT_MODEL", "custom/text-model")
+    monkeypatch.setenv("EMBEDDING_SHARED_VECTOR_SPACE", "true")
+    with TestClient(app) as client:
+        response = client.get("/v1/models")
+        assert response.status_code == 200
+        assert response.json()["shared_vector_space"] is True
