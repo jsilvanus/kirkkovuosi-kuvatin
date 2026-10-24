@@ -6,6 +6,7 @@ import { reconcileFiles } from './reconcile.js';
 import { uploadAssets } from './upload-assets.js';
 import { embedAssets } from './embed-assets.js';
 import { searchImages } from './search-images.js';
+import { evaluateSearchFile } from './evaluate-search.js';
 const [command,...args]=process.argv.slice(2);
 const out=(value:unknown)=>console.log(JSON.stringify(value,null,2));
 
@@ -33,6 +34,13 @@ async function main() {
       out(await searchImages(query, limit, librarySlug));
       break;
     }
+    case 'evaluate': {
+      const file = args[0];
+      if (!file) throw new Error('Usage: npm run assets:evaluate -- ./evaluation.jsonl [k]');
+      const k = args[1] ? Number(args[1]) : 10;
+      out(await evaluateSearchFile(file, k));
+      break;
+    }
     case 'pipeline':
       if (!args[0] || !args[1]) throw new Error('Usage: npm run assets:pipeline -- ./assets.json ./downloads [text-model ...]');
       await migrate();
@@ -42,7 +50,7 @@ async function main() {
       out({embeddings:await embedAssets(args.slice(2).length ? args.slice(2) : undefined)});
       break;
     default:
-      throw new Error('Commands: migrate, import-metadata, reconcile, upload, embed, search, pipeline');
+      throw new Error('Commands: migrate, import-metadata, reconcile, upload, embed, search, evaluate, pipeline');
   }
 }
 main().catch((error) => { console.error(error); process.exitCode=1; }).finally(() => pool.end());
