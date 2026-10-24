@@ -22,13 +22,14 @@ Given a list of Sundays and their headings, Bible readings, and optional sermon 
 - **Post-MVP in-process MCP.** After the MVP is complete, add an MCP server that runs in-process with the Node.js application and exposes selected application capabilities as MCP tools/resources. Reuse the existing application services and schemas; do not create a separate MCP-specific implementation of matching, indexing, selection, or export. Keep the MCP interface additive so it does not delay the MVP.
 - **Ollama integration.** Embedding inference is performed through Ollama from the backend, using a configurable model and base URL. The API must report clear errors when Ollama or the selected model is unavailable.
 - **Local S3-compatible object storage.** VersityGW is provided as the local S3-compatible storage service. Store original visual assets and generated preview/thumbnail files there when appropriate; use standard S3 APIs and configuration rather than coupling application logic to VersityGW-specific behaviour.
-- **PostgreSQL for metadata and vectors.** Use PostgreSQL as the persistent source of truth for the asset catalogue, liturgical occasions, asset–occasion relationships, embedding metadata and vectors, and workflow state. Use pgvector for vector storage and similarity search, after verifying extension availability and compatibility in the deployment. Keep original binary assets and previews in VersityGW/S3. Embeddings are derived, versioned data that can be regenerated from source assets/text; record source IDs/checksums, model identity/version, modality, dimensions, and generation status. Keep database access behind repository/search interfaces so indexing and query strategies can evolve without changing the application workflows.
+- **PostgreSQL for metadata and vectors.** Use PostgreSQL as the persistent source of truth for the asset catalogue, source/import records, liturgical occasions, asset–occasion relationships, embedding metadata and vectors, and workflow state. Use pgvector for vector storage and similarity search, after verifying extension availability and compatibility in the deployment. Keep original binary assets and previews in VersityGW/S3. Embeddings are derived, versioned data that can be regenerated from source assets/text; record source IDs/checksums, model identity/version, modality, dimensions, and generation status. Keep database access behind repository/search interfaces so indexing and query strategies can evolve without changing the application workflows.
+- **Repeatable library-building pipeline.** Provide scripts/CLI commands to discover and import selected resources from the EVL materials bank and photo bank. The user may download image files manually; the pipeline must still be able to import metadata independently and reconcile local files to source records using stable source identifiers, source URLs, original filenames, checksums, or an explicit mapping manifest. Do not assume the source websites provide a stable public API or scrape/download in ways that bypass access controls or usage terms. Keep source-specific adapters replaceable, document manual fallback/import formats, and preserve provenance and per-item rights/attribution. Ingesting a library must be repeatable and incremental rather than a one-off script.
 
 ## 3. Primary workflow
 
 1. **Load the occasions.** Import or enter a list of Sundays/occasions. Each entry can include a date, liturgical name, one or more headings, Bible readings or their text, and optional sermon notes or other text.
-2. **Prepare the asset library.** Index the existing pictograms, photos, and backgrounds as separate asset types. Read available metadata and descriptions; allow optional keywords and human-written descriptions.
-3. **Calculate embeddings.** Use Ollama as the model runner for local embedding inference. Generate and store embeddings for asset text and, if a compatible locally runnable multimodal embedding model is available and performs well, visual contents of image assets. Asset indexing is reusable and must not be repeated for every search.
+2. **Build/synchronise the asset library.** Run source-specific metadata importers for selected EVL resources, and import locally available image files into VersityGW/S3. Upsert asset metadata and source/provenance records in PostgreSQL, reconcile metadata to files, and report unmatched records or files for manual resolution. Metadata import, binary upload, preview generation, and embedding calculation are distinct repeatable steps.
+3. **Calculate embeddings as a separate job.** Run one or more configured embedding models against eligible asset text and, where supported, image content. Store each model's vectors independently in PostgreSQL/pgvector with model identity/version, modality, dimensions, input checksum and status. Adding or changing a model must not overwrite other models' vectors or require re-importing assets. Asset embeddings are reusable and must not be recalculated for every search.
 4. **Find candidates.** For each occasion, calculate embeddings for its available text through Ollama and retrieve semantically relevant assets. Combine evidence from headings, Bible readings, sermon notes, asset descriptions/keywords, and visual embeddings where supported.
 5. **Generate a review list.** For each occasion and each asset library/type, produce 2–5 ranked suggestions by default (where enough candidates exist). Keep the full ranked candidate list available for users who want more options; do not treat the top-ranked item as automatically approved.
 6. **Review and select.** Users review suggestions in the web UI or CLI, preview assets, inspect match explanations, accept/select one or more candidates, reject candidates, or make manual choices. Persist selections and review status so work can move between CLI and UI. Clearly distinguish generated recommendations, selected assets, and reviewed/approved choices.
@@ -81,30 +82,35 @@ Do not assume every occasion has every text field. A heading alone should still 
 
 Each asset should support:
 
-- Stable ID and asset type: pictogram, photo, or background
+- Stable internal ID and asset type: pictogram, photo, or background
+- One or more source records containing source organisation, source system/collection, stable source ID where available, canonical source page/record URL, original filename, import timestamp, and source metadata snapshot or provenance reference
+- Import/reconciliation status, including metadata-only records, file-not-yet-provided, matched file, uploaded object, and any unresolved mapping
+- Stable S3 object key(s) for original and derived files, with checksums and file metadata
 - File path or stable URL/reference
 - Preview/thumbnail reference
 - Optional name, description, keywords, and existing design-system metadata
 - Photographer/creator, copyright holder, source organisation, required attribution/credit line, licence/usage terms, and any other rights-related names or notices supplied with the asset
 - Optional usage guidance, aspect ratio, colour/theme, or other constraints supplied by the design system
 - File checksum/version and indexing status
-- Embedding model/version, Ollama model identifier, vector dimensions, modality, and relevant source version
+- Embedding records as a one-to-many relation: model/provider identifier and version/digest, modality, dimensions, distance metric/normalisation where relevant, input content checksum/version, status, timestamps, and vector. Multiple models and versions may coexist for the same asset and modality
 - Availability/licence or usage notes, if supplied
 
 Asset indexing should not modify the original files. Re-index when an asset changes or when the embedding model/version changes.
 
 ## 6. Semantic matching approach
 
-### Ollama and embedding models
+### Separate embedding pipeline and multiple models
 
-Ollama is the assumed model runner for embedding inference. Implement an embedding-provider interface backed initially by Ollama's embedding API, so model choice and provider details do not leak throughout the application.
+Embedding calculation is a separately invokable and repeatable pipeline step, not an implicit side effect of downloading metadata or uploading a file. Provide CLI/script commands to list configured models, calculate missing/stale vectors for a selected model, recalculate a model, and report progress/failures. It must be possible to import metadata and assets before choosing or running any embedding model.
+
+Ollama is the initial model runner for text embedding inference. Implement a provider interface so model choice and provider details do not leak throughout the application. Support multiple configured embedding models at the same time; vectors for one model/version must never overwrite vectors for another. Use a stable embedding-model record and a separate embedding record per source/content version, model version, and modality. Queries and recommendations must explicitly choose a compatible embedding space; never compare vectors from incompatible models or modalities.
 
 - Evaluate models that can be run through Ollama against real Finnish liturgical headings, Bible texts, and representative assets before choosing a default.
 - For text-to-image matching, use a model whose text and image vectors share a compatible embedding space, if such a suitable model is available through the chosen local setup. Do not assume a text-only embedding model can embed image pixels.
 - If Ollama can provide only text embeddings for the selected model, embed headings, descriptions, and available keywords as text, and treat that as a useful first implementation. Assets without metadata should still be eligible for direct visual matching in a later compatible-model integration, not falsely presented as visually embedded.
 - If direct visual embeddings are needed but unavailable through Ollama for a suitable model, document the gap and evaluate an adapter or separate local inference service before considering a remote API. Do not silently introduce an external dependency.
 - Store the exact model identifier and, where obtainable, model/version or digest, vector dimensions, modality, and source version so stale vectors can be detected. Persist vectors in PostgreSQL using pgvector, with separate metadata identifying the source, embedding model/version, modality, dimensions, and source version/checksum. Embeddings must be versioned and rebuildable from source content/assets. Use database similarity queries from the beginning; choose an appropriate pgvector index only when justified by collection size and measured performance.
-- Precompute asset embeddings. Calculate occasion/query embeddings when an occasion is created or its text changes, and cache them where practical.
+- Precompute asset embeddings in the separate embedding job. Calculate occasion/query embeddings using an explicitly selected compatible model when an occasion is created or its text changes, and cache them where practical. Track model-specific readiness so a library can be searched only with models for which the relevant vectors exist.
 - Normalise vectors and use a documented similarity metric, typically cosine similarity when appropriate for the chosen model.
 - Handle Ollama unavailability, missing models, timeouts, and embedding errors with clear UI/CLI diagnostics. Document model-pull and setup steps.
 
@@ -203,14 +209,29 @@ If a Sunday needs several design variants, support multiple rows for that occasi
 
 Include a README/instructions sheet in XLSX explaining column meanings, and optionally an asset/recommendation review sheet. Keep the main data sheet suitable for mapping fields to Canva.
 
-## 9. Asset ingestion and indexing
+## 9. Asset-library creation, ingestion, and indexing
+
+### Repeatable source metadata and file import
+
+- Provide scripts/CLI commands to build and update the library from selected source collections, initially the EVL materials bank (pictograms, logos, backgrounds) and EVL photo bank.
+- Treat metadata import and image-file acquisition as independent operations. The user may download selected image files manually; scripts should import/synchronise available source metadata and then match local files to metadata records. Do not require automated image downloading for the workflow to function.
+- Before implementing each source adapter, inspect whether the source offers a documented API, metadata export, collection export, or permitted bulk-download mechanism. Do not assume a stable API, bypass sign-in/access controls, or ignore terms, rate limits, or robots/access policies. Provide a documented CSV/JSON manifest fallback when automated metadata retrieval is unavailable or inappropriate.
+- Store source IDs, source page/record URLs, collection/category, original filename, title/name, description, tags/keywords, creator/photographer, rights holder, credit line, licence/usage restrictions, and other available metadata. Preserve the source's original fields or a provenance snapshot where useful, without treating missing fields as known facts.
+- Use stable internal asset IDs and unique source identifiers where available. Re-running an import should upsert/update records rather than create duplicates. Track source metadata changes and avoid silently overwriting human-curated fields; define which fields are source-managed and which are locally curated.
+- Reconcile manually downloaded files to metadata using source ID, original filename, source URL or checksum, with an explicit mapping manifest for ambiguous cases. Never silently match ambiguous files. Report metadata-only records, unmatched local files, duplicates, conflicts, and files whose rights/usage status needs review.
+- Upload approved original files to VersityGW/S3, record object keys and checksums in PostgreSQL, and generate previews/thumbnails as a separate idempotent step. Keep original bytes unchanged; derived files should be identifiable as derivatives.
+- Respect asset-level permissions and terms. Importing metadata or storing an asset does not itself grant permission to use, embed, export, or publish it. Make usage/rights review status visible to downstream search and export.
+
+### File and metadata indexing
 
 - Accept the actual formats present in the existing libraries; discover these before setting final format support.
 - Preserve original filenames and stable IDs.
 - Generate thumbnails/previews without replacing originals.
 - Extract existing metadata where possible.
 - Permit assets with no metadata to be indexed using visual embeddings when the selected model supports them.
-- Support incremental indexing: new or changed assets are processed without rebuilding the entire library.
+- Support incremental metadata sync, local-file reconciliation, S3 upload, preview generation, and embedding jobs: new or changed records are processed without rebuilding the entire library.
+- Make each pipeline step independently runnable and safely repeatable; failed items should be retryable without duplicating assets or losing completed work.
+- Provide dry-run and summary/report modes for source metadata imports and file reconciliation, including counts for new, changed, unchanged, unmatched, skipped, and failed records.
 - Report unsupported, corrupt, missing, or inaccessible assets clearly.
 - Treat the design system's rules and metadata as constraints or additional signals, not as a replacement for semantic matching.
 
@@ -246,6 +267,9 @@ First inspect the repository and available environment. Then choose the simplest
 - Local S3-compatible object storage through the provided VersityGW service for original assets and derived previews/thumbnails
 - PostgreSQL with pgvector for liturgical-text and visual-asset embedding records and similarity search, with model/version metadata and a replaceable search layer
 - Vector storage and similarity search appropriate to the expected collection size
+- Repeatable source-specific metadata importers and manifest-based fallback import
+- A local-file reconciliation and idempotent upload pipeline into VersityGW/S3
+- A separately runnable, multi-model embedding batch pipeline with per-model progress/status
 - A background/batch indexing path for asset embeddings
 - An Ollama-backed embedding service behind a small provider interface
 - An application service for recommendation and export
@@ -292,8 +316,9 @@ Configure the Ollama base URL and embedding model through environment/configurat
 - Implement the first API operations from the OpenAPI contract.
 - Generate the CLI/client from the specification and verify it against the running API.
 - Connect the Vite frontend to the API without adding backend responsibilities to the frontend toolchain.
-- Ingest a small sample of occasions and all three asset categories.
-- Compute embeddings through Ollama and persist versioned PostgreSQL embedding records using pgvector for liturgical text and each supported asset type.
+- Build a small end-to-end library from source metadata and manually downloaded sample files; verify source-record/file reconciliation and upload to VersityGW/S3.
+- Import/upsert metadata into PostgreSQL and verify that rerunning the importer is idempotent.
+- Run embedding calculation as a separate command and persist versioned PostgreSQL/pgvector records for one selected model; verify that a second model can be added without overwriting the first model's vectors.
 - Generate ranked suggestions from headings and supplied texts.
 - Add basic manual semantic search over each asset library, with ranked previews and metadata.
 - Provide a basic UI or review view for inspecting results.
@@ -307,7 +332,8 @@ Configure the Ollama base URL and embedding model through environment/configurat
 - Add optional Bible readings, sermon notes, and other text fields.
 - Build the occasion list and suggestion-review UI.
 - Add manual selections, rejections, filters, progress, and error handling.
-- Add incremental asset indexing and embedding-version management.
+- Add incremental source metadata sync, file reconciliation, S3 upload, preview generation, and embedding-version management.
+- Add independent embedding jobs for multiple configured models, including retries and per-model status.
 
 **Exit criterion:** the communications team can review and approve visual choices for a batch of Sundays.
 
