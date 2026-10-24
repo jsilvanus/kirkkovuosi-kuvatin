@@ -1,0 +1,27 @@
+name: Model inference smoke test
+on:
+  workflow_dispatch:
+jobs:
+  model-inference-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: services/multimodal-embeddings
+    env:
+      RUN_MODEL_INFERENCE_TESTS: "1"
+      EMBEDDING_DEVICE: cpu
+      HF_HOME: ~/.cache/huggingface
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/multimodal-embeddings/pyproject.toml
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: huggingface-clip-multilingual-${{ runner.os }}-${{ hashFiles('services/multimodal-embeddings/multimodal_embeddings/model.py') }}
+      - run: python -m pip install -e ".[dev]"
+      - run: pytest -q tests/test_model_inference.py
