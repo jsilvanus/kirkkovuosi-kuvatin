@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS assets (
   file_status text NOT NULL DEFAULT 'metadata-only'
     CHECK (file_status IN ('metadata-only','unverified','verified','uploaded','failed')),
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- One stored file asset per exact content hash within a library.
