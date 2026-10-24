@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -22,6 +24,19 @@ app = FastAPI(
     description="Asynchronous image and text embeddings from an aligned multilingual CLIP model pair.",
     lifespan=lifespan,
 )
+
+
+# The checked-in OpenAPI document is the public contract served to clients.
+_OPENAPI_PATH = Path(__file__).resolve().parents[1] / "openapi.json"
+
+
+def _canonical_openapi() -> dict[str, object]:
+    if app.openapi_schema is None:
+        app.openapi_schema = json.loads(_OPENAPI_PATH.read_text(encoding="utf-8"))
+    return app.openapi_schema
+
+
+app.openapi = _canonical_openapi  # type: ignore[method-assign]
 
 
 class TextJobRequest(BaseModel):
