@@ -50,7 +50,11 @@ Embedding model names can be passed as extra arguments to `assets:embed`; otherw
 
 Review reconciliation reports before treating the library as ready. Preserve source licences, usage restrictions, and required attribution exactly as provided. Do not bulk-download or index resources until the applicable terms and permissions have been checked.
 
-## ## Multimodal image/text embedding service\n\nA separate Python API and worker are available under `services/multimodal-embeddings`. They use the same multilingual CLIP model for both image and text jobs, with a durable SQLite queue shared by the API and worker. Start them with `docker compose -f docker-compose.embeddings.yml up --build -d`; the API is bound to `127.0.0.1:8091`. See the service README for API examples and security/operational limitations. This service currently returns vectors to the caller; the main application remains responsible for storing vectors in `asset_embeddings` with model identity and content checksums.\n\n## Current limitations
+## Multimodal image/text embedding service
+
+A separate Python API and worker are available under `services/multimodal-embeddings`. They use a documented, aligned CLIP image/text model pair and a durable SQLite queue shared by the API and worker. Start them with `docker compose -f docker-compose.embeddings.yml up --build -d`; the API is bound to `127.0.0.1:8091`. See the service README for API examples and security/operational limitations. This service currently returns vectors to the caller; the main application remains responsible for storing vectors in `asset_embeddings` with model identity and content checksums.
+
+## Current limitations
 
 - Source-specific EVL metadata adapters are not yet implemented. The current supported ingestion format is JSON/JSONL; manually downloaded files can be reconciled against manifest paths or filenames.
 - Preview/thumbnail generation, image-pixel embeddings, search API/UI, occasion workflows, and XLSX/Canva export remain later steps.
