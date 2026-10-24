@@ -31,8 +31,8 @@ export async function searchImages(query: string, limit = 10, librarySlug?: stri
   if (!models.shared_vector_space) throw new Error('Configured image and text encoders do not share a vector space');
   const accepted = await client.submitText(normalizedQuery);
   const result = await waitForVector(client, accepted.id);
-  if (result.modelName !== models.text_model) {
-    throw new Error(`Text job used unexpected model "${result.modelName}" (expected "${models.text_model}")`);
+  if (result.modelName !== models.model) {
+    throw new Error(`Text job used unexpected model pair "${result.modelName}" (expected "${models.model}")`);
   }
   const pairDigest = `image=${models.image_model};text=${models.text_model}`;
   const vectorLiteral = '[' + result.vector.join(',') + ']';
