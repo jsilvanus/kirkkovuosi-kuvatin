@@ -34,6 +34,8 @@ def test_model_contract_declares_shared_space_for_default_pair(tmp_path, monkeyp
     monkeypatch.setattr(queue, "DATA_DIR", tmp_path)
     monkeypatch.delenv("EMBEDDING_IMAGE_MODEL", raising=False)
     monkeypatch.delenv("EMBEDDING_TEXT_MODEL", raising=False)
+    monkeypatch.delenv("EMBEDDING_IMAGE_REVISION", raising=False)
+    monkeypatch.delenv("EMBEDDING_TEXT_REVISION", raising=False)
     monkeypatch.delenv("EMBEDDING_SHARED_VECTOR_SPACE", raising=False)
     with TestClient(app) as client:
         response = client.get("/v1/models")
