@@ -14,7 +14,8 @@
     "assets:embed": "tsx src/cli.ts embed",
     "assets:pipeline": "tsx src/cli.ts pipeline",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "embedding:types": "openapi-typescript services/multimodal-embeddings/openapi.json -o src/generated/embedding-service.d.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.850.0",
@@ -26,6 +27,7 @@
     "@types/node": "^22.18.0",
     "@types/pg": "^8.15.5",
     "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "openapi-typescript": "^7.9.0"
   }
 }
