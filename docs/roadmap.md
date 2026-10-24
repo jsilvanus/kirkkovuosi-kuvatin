@@ -14,9 +14,13 @@ This roadmap groups the project into six delivery phases. The detailed requireme
 
 ## Phase 2 — Asset ingestion and independent library search
 
-- Integrate the provided VersityGW S3-compatible storage for originals and previews where appropriate.
-- Build incremental asset indexing and store asset metadata plus versioned embeddings in PostgreSQL with pgvector for similarity search, for pictograms, photos, and backgrounds as supported.
-- Add independent semantic and keyword/metadata search for each library.
+- Implement repeatable metadata importers for selected resources in the EVL materials bank and photo bank. Inspect supported APIs/exports and terms first; provide CSV/JSON manifest fallback where needed.
+- Support the user's manual image downloads: reconcile local files to source metadata using source IDs, filenames, URLs, checksums, or an explicit mapping manifest, and report ambiguous/unmatched items.
+- Upsert source metadata and provenance into PostgreSQL without duplicate records; preserve rights/credit data and distinguish source-managed fields from human-curated fields.
+- Upload approved originals to VersityGW/S3, store object keys/checksums in PostgreSQL, and generate previews as an idempotent step.
+- Build a separately invokable embedding pipeline that can run one or more configured models. Store vectors in PostgreSQL/pgvector with model/version, modality, dimensions, input checksum, and status; multiple models must coexist without overwriting each other.
+- Make metadata sync, file reconciliation/upload, preview generation, and embedding calculation independently runnable and retryable.
+- Add independent semantic and keyword/metadata search for each library, with the selected query embedding model explicitly matched to compatible stored vectors.
 - Expose search through the API, CLI, and a simple web UI, with ranked results, previews, metadata, and filters.
 
 **Exit criteria:** users can find and inspect library assets without creating a Sunday workflow; re-indexing changed assets is supported.
@@ -45,7 +49,7 @@ This roadmap groups the project into six delivery phases. The detailed requireme
 
 - Improve ranking using the human-reviewed evaluation set; add regression checks for matching quality.
 - Add actionable CLI/API errors, batch progress, deterministic selection persistence, and diagnostics.
-- Test incremental re-indexing, backup/restore, and automatic TTL cleanup across restarts.
+- Test incremental source metadata sync, file reconciliation, upload, preview generation, and multi-model embedding recalculation, along with backup/restore and automatic TTL cleanup across restarts.
 - Document configuration for Ollama and VersityGW, local setup, asset rights/provenance, and the repeatable export procedure.
 - Confirm the unauthenticated deployment is restricted to an appropriately trusted network or protected at the deployment boundary.
 
@@ -55,6 +59,7 @@ This roadmap groups the project into six delivery phases. The detailed requireme
 
 - Add an in-process MCP server exposing selected search, recommendation, review, and export capabilities through the shared application services.
 - Evaluate and tune pgvector indexing (for example, exact search versus an approximate index) if library size or latency warrants it.
+- Add further source adapters only where permitted and useful; retain a manifest import path for sources without suitable metadata access.
 - Improve duplicate/diversity handling and explainability.
 - Extend design-system constraints and metadata support based on the supplied documentation and team feedback.
 
