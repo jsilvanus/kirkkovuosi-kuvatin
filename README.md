@@ -55,3 +55,14 @@ Review reconciliation reports before treating the library as ready. Preserve sou
 - Source-specific EVL metadata adapters are not yet implemented. The current supported ingestion format is JSON/JSONL; manually downloaded files can be reconciled against manifest paths or filenames.
 - Preview/thumbnail generation, image-pixel embeddings, search API/UI, occasion workflows, and XLSX/Canva export remain later steps.
 - The pipeline expects a source ID for reliable source-record upserts. Records without stable IDs can be imported, but should be reviewed for ambiguity.
+
+
+## Embedding service contract
+
+The standalone Python service's public contract is maintained in `services/multimodal-embeddings/openapi.json` and served at `/openapi.json`. The TypeScript types are generated from that OpenAPI document, not maintained by hand:
+
+```sh
+npm run embedding:types
+```
+
+Use `src/embedding-service-client.ts` for typed job submission and polling. Set `EMBEDDING_SERVICE_URL` to the service base URL when it is not running on the local default. The Python service owns embedding computation and its durable job queue; the main application owns asset records and persistence of returned vectors into PostgreSQL/pgvector.
