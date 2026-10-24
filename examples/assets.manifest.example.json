@@ -1,0 +1,23 @@
+[
+  {
+    "library": "evl-photo-bank",
+    "libraryName": "EVL Photo Bank",
+    "sourceOrganisation": "EVL",
+    "sourceCollection": "photo-bank",
+    "sourceSystem": "evl-photo-bank",
+    "sourceId": "replace-with-source-record-id",
+    "sourceUrl": "https://example.invalid/record",
+    "assetType": "photo",
+    "title": "Replace with source title",
+    "description": "Source description, if provided",
+    "keywords": ["advent", "light"],
+    "originalFilename": "source-record.jpg",
+    "localPath": "downloads/source-record.jpg",
+    "creator": null,
+    "rightsHolder": null,
+    "attribution": null,
+    "licence": null,
+    "usageTerms": "Record the source terms accurately",
+    "metadata": {}
+  }
+]
