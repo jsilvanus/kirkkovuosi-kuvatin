@@ -85,6 +85,7 @@ Each asset should support:
 - File path or stable URL/reference
 - Preview/thumbnail reference
 - Optional name, description, keywords, and existing design-system metadata
+- Photographer/creator, copyright holder, source organisation, required attribution/credit line, licence/usage terms, and any other rights-related names or notices supplied with the asset
 - Optional usage guidance, aspect ratio, colour/theme, or other constraints supplied by the design system
 - File checksum/version and indexing status
 - Embedding model/version, Ollama model identifier, vector dimensions, modality, and relevant source version
@@ -190,13 +191,13 @@ Prefer one row per occasion/design output, with stable columns such as:
 - heading (include the selected Sunday heading in every exported row)
 - bible_readings
 - sermon_notes (optional; include only if desired in the exported content)
-- pictogram_id, pictogram_url or pictogram_path
-- photo_id, photo_url or photo_path
-- background_id, background_url or background_path
+- pictogram_id, pictogram_url or pictogram_path, and available pictogram credit/creator/rights fields
+- photo_id, photo_url or photo_path, photographer/creator credit, copyright holder and required attribution where available
+- background_id, background_url or background_path, and available creator/rights fields
 - selected_asset_notes
 - template_variant (optional, if the team later uses multiple Canva templates)
 
-Asset URLs or paths must be usable by the team's actual Canva workflow; do not assume a local filesystem path can be resolved by Canva. The local VersityGW S3 endpoint may not be reachable by Canva, so export must not assume that a local S3 URL is directly importable; determine whether the team needs a reachable URL, downloaded files, or another supported asset handoff. Determine whether the production workflow needs public/authorised URLs, filenames, or another stable reference. Never export temporary preview URLs.
+Include photographer names and all other available required credit/attribution details in the exported data for each selected asset, not merely in the internal asset catalogue or a separate reference document. Preserve the association between each credit and its specific asset. Include copyright holder, source, licence or usage notes when available and useful for downstream review; do not invent missing names or credits. If Canva's template cannot display every credit field, retain them in a companion review/metadata sheet and document how credits are carried into the final published design. Asset URLs or paths must be usable by the team's actual Canva workflow; do not assume a local filesystem path can be resolved by Canva. The local VersityGW S3 endpoint may not be reachable by Canva, so export must not assume that a local S3 URL is directly importable; determine whether the team needs a reachable URL, downloaded files, or another supported asset handoff. Determine whether the production workflow needs public/authorised URLs, filenames, or another stable reference. Never export temporary preview URLs.
 
 If a Sunday needs several design variants, support multiple rows for that occasion or a clearly documented variant structure. Do not silently create a combinatorial explosion of every possible asset combination. Export only user-approved selections, and make unselected recommendations distinguishable from chosen assets in the workbook. Every exported row must include both the Sunday/occasion name and its selected heading alongside the image selections, so the visual choices remain tied to their liturgical context in Canva and in review.
 
@@ -266,7 +267,7 @@ Configure the Ollama base URL and embedding model through environment/configurat
 - Set the workflow expiry to eight days after each successful export. Each later successful export of the same workflow resets the expiry to eight days after that export. Ordinary reads, edits, recommendation runs, and failed exports do not extend the TTL.
 - Keep durable public asset-library metadata, source assets, and reusable asset embeddings outside the workflow TTL. Delete transient occasion text, occasion embeddings derived from it, recommendations, and workflow-specific selections/review state when the workflow expires, unless a clearly documented dependency must be retained without the source text.
 - Keep sermon notes private to the deployment and do not send them to external model providers. Ollama is the assumed local inference path, though the actual server's location and network must be configured deliberately.
-- Record the provenance and usage constraints of visual assets when available.
+- Record the provenance and usage constraints of visual assets when available, including photographer/creator names, copyright holders, source organisation, required credit/attribution wording, and licence/usage terms. Preserve this metadata through selection and export; include the applicable credits alongside each selected asset in the exported workbook/CSV. Never infer or fabricate missing credits.
 - Avoid sending complete source texts to third-party services by default.
 - Implement and test automatic expiry/purge behaviour, including after restarts; do not rely only on an in-memory timer. Make the expiry timestamp visible in workflow status and provide a documented cleanup mechanism.
 
