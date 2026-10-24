@@ -37,7 +37,7 @@ Or run all steps in order:
 npm run assets:pipeline -- ./assets.json ./downloads nomic-embed-text
 ```
 
-Embedding model names can be passed as extra arguments to `assets:embed`; otherwise `EMBEDDING_MODELS` is used. Current embedding calculation embeds metadata text through Ollama `/api/embed`. It does not claim to produce image-pixel embeddings. Text-to-image retrieval requires a model with a compatible shared embedding space and a separate supported image-input implementation.
+Text embedding model names can be passed as extra arguments to `assets:embed`; otherwise `EMBEDDING_MODELS` is used. Metadata-text embeddings use Ollama `/api/embed`. Image-pixel embeddings use the separate aligned multilingual CLIP service; start it before running image embedding jobs. See `docs/semantic-search.md` for setup and search instructions.
 
 ## Idempotency and deduplication
 
@@ -57,7 +57,7 @@ A separate Python API and worker are available under `services/multimodal-embedd
 ## Current limitations
 
 - Source-specific EVL metadata adapters are not yet implemented. The current supported ingestion format is JSON/JSONL; manually downloaded files can be reconciled against manifest paths or filenames.
-- Preview/thumbnail generation, image-pixel embeddings, search API/UI, occasion workflows, and XLSX/Canva export remain later steps.
+- Preview/thumbnail generation, search API/UI, occasion workflows, and XLSX/Canva export remain later steps. CLI semantic search and stored image-pixel embeddings are implemented, but retrieval quality still needs evaluation on representative Finnish church images.
 - The pipeline expects a source ID for reliable source-record upserts. Records without stable IDs can be imported, but should be reviewed for ambiguity.
 
 
