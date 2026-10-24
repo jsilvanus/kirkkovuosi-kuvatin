@@ -10,7 +10,7 @@ Given a list of Sundays and their headings, Bible readings, and optional sermon 
 
 ## 2. Architecture principles
 
-- **No JavaScript backend.** Implement the application/API backend in a non-JavaScript language, selected after repository and dependency discovery. Do not use Node.js as the server runtime.
+- **Node.js backend with TypeScript.** Use Node.js as the server runtime and TypeScript for backend code. Keep the API backend distinct from the Vite frontend at the project-architecture level, while allowing both to share generated API types or a small common package where useful.
 - **OpenAPI-first API.** Define the HTTP API in a version-controlled OpenAPI specification. Treat the specification as the contract for the backend, frontend API types/client, documentation, and CLI generation.
 - **Generated CLI.** Generate the CLI from the OpenAPI specification using a suitable generator. Avoid maintaining a separate hand-written CLI implementation of API endpoints. If generated output needs a thin wrapper for usability, keep that wrapper small and regenerate the underlying client/commands from the spec.
 - **Small Vite frontend.** Build a lightweight browser UI with Vite, separate from the backend. Do not introduce Next.js, server-side rendering, or a JavaScript server framework. Use TypeScript if helpful, but keep the frontend intentionally small.
@@ -217,7 +217,7 @@ Do not commit to a large infrastructure or a particular vector database before l
 
 First inspect the repository and available environment. Then choose the simplest maintainable implementation that supports:
 
-- A small non-JavaScript backend and HTTP API
+- A small Node.js/TypeScript backend and HTTP API
 - A version-controlled OpenAPI specification as the API contract
 - A generated CLI that uses the same API contract
 - A small, separate Vite frontend built as static assets
@@ -249,7 +249,7 @@ Configure the Ollama base URL and embedding model through environment/configurat
 ### Phase 0 — Repository and data discovery
 
 - Inspect the repository and document the current state.
-- Select a non-JavaScript backend language/framework based on the existing repository and the needs of image processing, embeddings, and XLSX export; document the rationale.
+- Set up a Node.js/TypeScript backend and choose a lightweight API framework (Fastify is a reasonable default); document the framework choice. Keep embedding inference behind the Ollama HTTP API rather than requiring the backend itself to run ML models.
 - Define the first OpenAPI contract and choose a reproducible OpenAPI-based CLI generation approach.
 - Set up the minimal Vite frontend skeleton, separate from the API backend.
 - Inspect sample occasion data and the asset libraries.
@@ -258,7 +258,7 @@ Configure the Ollama base URL and embedding model through environment/configurat
 - Define a small representative evaluation set.
 - Prototype Ollama-accessible embedding models and verify Finnish semantic matching. Verify direct image embedding support separately instead of assuming it exists.
 
-**Exit criterion:** a documented, evidence-based model and architecture choice, with example matches that users consider useful and a clear statement of whether first-release matching uses text metadata, direct image embeddings, or both; plus an agreed non-JavaScript backend, initial OpenAPI contract, generated-CLI approach, and minimal Vite app.
+**Exit criterion:** a documented, evidence-based model and architecture choice, with example matches that users consider useful and a clear statement of whether first-release matching uses text metadata, direct image embeddings, or both; plus an agreed Node.js/TypeScript backend, initial OpenAPI contract, generated-CLI approach, and minimal Vite app.
 
 ### Phase 1 — Working semantic matching prototype
 
