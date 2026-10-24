@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from . import queue
 from .model import DEFAULT_IMAGE_MODEL, DEFAULT_TEXT_MODEL, configured_model_name
@@ -40,10 +40,12 @@ app.openapi = _canonical_openapi  # type: ignore[method-assign]
 
 
 class TextJobRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     text: str = Field(min_length=1, max_length=20_000)
 
 
 class ImageJobRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     image_base64: str = Field(min_length=1)
     filename: str | None = Field(default=None, max_length=255)
 
