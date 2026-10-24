@@ -45,6 +45,18 @@ def initialize() -> None:
         conn.execute("CREATE INDEX IF NOT EXISTS embedding_jobs_claim_idx ON embedding_jobs(status, created_at)")
 
 
+def recover_interrupted_jobs() -> int:
+    """Requeue work left running by a crashed worker; image spool files remain available."""
+    with _connect() as conn:
+        cursor = conn.execute(
+            """UPDATE embedding_jobs
+               SET status='queued', error=NULL,
+                   updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
+               WHERE status='running'"""
+        )
+        return cursor.rowcount
+
+
 def enqueue_text(text: str, model_name: str) -> dict[str, Any]:
     value = text.strip()
     if not value:
@@ -135,7 +147,7 @@ def complete_job(job_id: str, vector: list[float]) -> None:
             """UPDATE embedding_jobs
                SET status='complete', vector_json=?, dimensions=?, error=NULL,
                    updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
-               WHERE id=?""",
+               WHERE id=? AND status='running'""",
             (json.dumps(vector, separators=(",", ":"), allow_nan=False), len(vector), job_id),
         )
 
@@ -144,6 +156,7 @@ def fail_job(job_id: str, error: str) -> None:
     with _connect() as conn:
         conn.execute(
             """UPDATE embedding_jobs SET status='failed', error=?,
-               updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?""",
+               updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
+               WHERE id=? AND status='running'""",
             (error[:2000], job_id),
         )
