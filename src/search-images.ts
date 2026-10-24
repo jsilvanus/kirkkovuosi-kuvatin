@@ -47,6 +47,7 @@ export async function searchImages(query: string, limit = 10, librarySlug?: stri
       WHERE e.modality='image' AND e.status='ready'
         AND e.model_name=$2 AND e.model_digest=$3
         AND e.dimensions=$4
+        AND e.input_sha256=a.sha256
         AND ($5::text IS NULL OR l.slug=$5)
       ORDER BY e.embedding <=> $1::vector, a.id
       LIMIT $6`,
