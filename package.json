@@ -15,7 +15,8 @@
     "assets:pipeline": "tsx src/cli.ts pipeline",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
-    "embedding:types": "openapi-typescript services/multimodal-embeddings/openapi.json -o src/generated/embedding-service.d.ts"
+    "embedding:types": "openapi-typescript services/multimodal-embeddings/openapi.json -o src/generated/embedding-service.d.ts",
+    "assets:search": "tsx src/cli.ts search"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.850.0",
